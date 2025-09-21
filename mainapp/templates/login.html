@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.8/css/bootstrap-grid.min.css"
+        integrity="sha512-dOjUSaLkr6G2pwQ7ry9juX+iXw5602zg1kg8yH+guR3uSEidGyCnOEQnGlr7xwu/8WE+pVm1ZNqaIs5ETTIJQg=="
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <title>Sign Up Form</title>
+</head>
+
+<body>
+
+    <div class="row my-5">
+        <div class="col-md-8 mx-auto p-5">
+
+            {% if messages %}
+            <div>
+                {% for message in messages %}
+                <div class="alert alert-success">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <form action="" method="post" class="w-75 mx-auto rounded-3 shadow-lg p-5">
+                {%csrf_token%}
+                <h3>LOGIN FORM</h3> <br>
+
+
+
+                <label for="">Enter Email </label>
+                <input type="email" name="email" class="form-control rounded-pill"> <br><br>
+
+
+
+
+
+                <label for="">Enter Your Password </label>
+                <input type="text" name="password" class="form-control rounded-pill"> <br><br>
+
+
+
+                <input type="submit" value="Login" class="form-control btn btn-outline-primary">
+            </form>
+        </div>
+    </div>
+
+</body>
+
+</html>

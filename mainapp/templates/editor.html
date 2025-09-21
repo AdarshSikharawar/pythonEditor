@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Agent Popup</title>
+    <style>
+        /* Your CSS styles remain the same */
+        body {
+            font-family: Arial, sans-serif;
+        }
+
+        #chatToggle {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            background: #ff7f27;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        #chatPopup {
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+            width: 350px;
+            height: 450px;
+            background: #fff;
+            border: 1px solid #ccc;
+            border-radius: 12px;
+            box-shadow: 0px 5px 20px rgba(0, 0, 0, 0.2);
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chat-header {
+            background: #ff7f27;
+            color: white;
+            padding: 12px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .chat-body {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+            background: #f9f9f9;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .chat-footer {
+            display: flex;
+            border-top: 1px solid #ddd;
+        }
+
+        .chat-footer input[type="text"] {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            outline: none;
+        }
+
+        .chat-footer button {
+            padding: 10px 15px;
+            background: #ff7f27;
+            border: none;
+            color: white;
+            cursor: pointer;
+        }
+
+        .message {
+            padding: 10px;
+            border-radius: 8px;
+            max-width: 80%;
+            word-wrap: break-word;
+        }
+
+        .user-message {
+            background: #d2f8d2;
+            align-self: flex-end;
+        }
+
+        .ai-message {
+            background: #ffefdb;
+            align-self: flex-start;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Welcome to the Editor</h1>
+    <p>This is your main page content.</p>
+
+    <button id="chatToggle">Chat with AI</button>
+
+    <div id="chatPopup">
+        <div class="chat-header">Personal AI</div>
+
+        <div class="chat-body" id="chat-body">
+            <div class="message ai-message">Hello! How can I help you today?</div>
+        </div>
+
+        <div class="chat-footer">
+            <form id="chat-form" style="display: flex; width: 100%;" method="POST" enctype="multipart/form-data">
+                {% csrf_token %}
+                <input type="text" id="message-input" name="message" placeholder="Type your message..." required>
+                <input type="file" name="image" id="image-input" style="display: none;">
+                <label for="image-input" style="padding: 10px; cursor: pointer;">📎</label>
+                <button type="submit">Send</button>
+            </form>
+
+
+
+
+        </div>
+    </div>
+
+    <script>
+        const toggleBtn = document.getElementById("chatToggle");
+        const chatPopup = document.getElementById("chatPopup");
+        const chatForm = document.getElementById("chat-form");
+        const messageInput = document.getElementById("message-input");
+        const chatBody = document.getElementById("chat-body");
+
+        // Toggle popup visibility
+        toggleBtn.addEventListener("click", () => {
+            chatPopup.style.display = (chatPopup.style.display === "flex") ? "none" : "flex";
+        });
+
+        // Handle form submission with JavaScript
+        chatForm.addEventListener("submit", async (event) => {
+            event.preventDefault(); // stop reload
+
+            // 1. Get form data (including files)
+            const formData = new FormData(chatForm);
+            const userMessageText = formData.get('message');
+
+            // 2. Show user message immediately
+            if (userMessageText) {
+                const userMessageElem = document.createElement('div');
+                userMessageElem.className = 'message user-message';
+                userMessageElem.textContent = userMessageText;
+                chatBody.appendChild(userMessageElem);
+            }
+            chatBody.scrollTop = chatBody.scrollHeight;
+
+            // 3. Show temporary "Thinking..." message
+            const thinkingElem = document.createElement('div');
+            thinkingElem.className = 'message ai-message';
+            thinkingElem.textContent = '🧠 Thinking...';
+            chatBody.appendChild(thinkingElem);
+            chatBody.scrollTop = chatBody.scrollHeight;
+
+            // Clear form inputs
+            chatForm.reset();
+
+            try {
+                // 4. Send request to backend
+                const response = await fetch("{% url 'gemini_chat' %}", {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': formData.get('csrfmiddlewaretoken'),
+                    },
+                    body: formData,
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Server error: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+
+                // 5. Replace "Thinking..." with actual AI reply
+                thinkingElem.innerHTML = data.reply.replace(/\n/g, '<br>');
+
+                // 6. Agar image_url mila hai to image show karo
+                if (data.image_url) {
+                    const imgElem = document.createElement('img');
+                    imgElem.src = data.image_url;
+                    imgElem.className = 'chat-image';
+                    imgElem.style.maxWidth = '200px';
+                    imgElem.style.borderRadius = '8px';
+                    chatBody.appendChild(imgElem);
+                }
+
+            } catch (error) {
+                console.error('Fetch Error:', error);
+                thinkingElem.textContent = 'Sorry, something went wrong.';
+                thinkingElem.style.backgroundColor = '#ffdddd';
+            }
+
+            // 7. Scroll to bottom after AI reply
+            chatBody.scrollTop = chatBody.scrollHeight;
+        });
+
+
+    </script>
+</body>
+
+</html>
