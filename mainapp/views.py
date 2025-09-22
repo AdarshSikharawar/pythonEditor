@@ -11,40 +11,41 @@ from django.http import HttpResponse, JsonResponse
 def index (request):
     return render (request, 'index.html')
 
-def signup(request):
-    if request.method == "POST":
-        name = request.POST.get['name']
-        email = request.POST.get['email']
-        number = request.POST.get['number']
-        password = request.POST.get['password']
-        user = Ouruser.objects.create(name=name , email = email , number = number , password = password)
-        user.save()
-        messages.success(request, "You are registered successfully!")
-        return render(request, 'login.html')
-        
-    return render (request, 'signup.html') 
 
-def login(request):
+def auth_view(request):
     if request.method == "POST":
-        email = request.POST.get('email', '')
-        password = request.POST.get('password', '')
+        form_type = request.POST.get("form_type")
 
-        if (email == "" or password == ""):
+
+        if form_type == "signup":
+            name = request.POST.get('name')
+            email = request.POST.get('email')
+            password = request.POST.get('password')
             
-            return render (request, 'login.html')
+            if Ouruser.objects.filter(email=email).exists():
+                messages.error(request, "Email already registered")
+               
+            else:
+                Ouruser.objects.create(name=name, email=email, password=password)
+                messages.success(request, "You are registered successfully!")
+                
+
+            return redirect("auth")
         
-        else:
-            user = Ouruser.objects.get(email = email)
-            if (user.email == email and user.password == password):
-                return redirect('gemini_chat')
-            
+        elif form_type == "login":  # Login form submit hua
+            email = request.POST.get('email')
+            password = request.POST.get('password')
+
+            user = Ouruser.objects.filter(email=email).first()
+            if user and user.password == password:
+                return redirect("gemini_chat")
+            else:
+                messages.error(request, "Invalid email or password")
+
+            return redirect("auth")  # same page pe reload
     
-    return render (request, 'login.html')
-
-
-
-
-
+        
+    return render(request, 'authentication.html') 
 
 
 
@@ -59,7 +60,7 @@ def gemini_chat(request):
             if not user_input and not image_file:
                 return JsonResponse({'error': 'No input provided.'}, status=400)
             
-            model = genai.GenerativeModel("gemini-1.5-flash-latest") # Using the correct model name
+            model = genai.GenerativeModel("gemini-1.5-flash-latest") 
             
             content_to_send = []
             if user_input:

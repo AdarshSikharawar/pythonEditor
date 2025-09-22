@@ -3,8 +3,7 @@ from . import views
 
 urlpatterns = [
     path('',views.index,name="index"),
-    path('signup/',views.signup,name="signup"),
-    path('login/',views.login,name="login"),
-    path('ai/',views.gemini_chat,name="gemini_chat")
+    path('auth/', views.auth_view, name="auth"),
+    path('ai/', views.gemini_chat, name="gemini_chat")
     
 ]
