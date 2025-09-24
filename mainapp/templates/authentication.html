@@ -35,12 +35,12 @@
                     {% csrf_token %}
                     <div class="form-group">
                         <label for="email">Email</label>
-                        <input type="email" id="email" name="email" placeholder="you@example.com" required>
+                        <input type="email" id="login_email" name="email" placeholder="you@example.com" required>
                     </div>
 
                     <div class="form-group">
                         <label for="password">Password</label>
-                        <input type="password" id="password" name="password" placeholder="••••••••" required>
+                        <input type="password" id="login_password" name="password" placeholder="••••••••" required>
                     </div>
 
                     <button type="submit" name="form_type" value="login" class="login-btn">Login</button>
@@ -76,17 +76,17 @@
 
                     <div class="form-group">
                         <label for="email">Email</label>
-                        <input type="email" id="email" name="email" placeholder="you@example.com" required>
+                        <input type="email" id="signup-email" name="email" placeholder="you@example.com" required>
                     </div>
 
                     <div class="form-group">
                         <label for="password">Password</label>
-                        <input type="password" id="password" name="password" placeholder="••••••••" required>
+                        <input type="password" id="signup-password" name="password" placeholder="••••••••" required>
                     </div>
 
                     <div class="form-group">
                         <label for="confirm-password">Confirm Password</label>
-                        <input type="password" id="confirm-password" name="confirm-password" placeholder="••••••••"
+                        <input type="password" id="signup-confirm-password" name="confirm-password" placeholder="••••••••"
                             required>
                     </div>
 
@@ -94,7 +94,7 @@
                 </form>
 
                 <p class="signup-link" style="margin-top: 1.5rem;">
-                    Already have an account? <a href="# " onclick="toggleForm('loginForm')">Log In</a>
+                    Already have an account? <a href="#" onclick="toggleForm('loginForm')">Log In</a>
                 </p>
             </div>
         </div>

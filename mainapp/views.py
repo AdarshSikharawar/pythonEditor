@@ -13,6 +13,7 @@ def index (request):
 
 
 def auth_view(request):
+    # form_to_show = request.GET.get('form', 'login')
     if request.method == "POST":
         form_type = request.POST.get("form_type")
 
@@ -43,7 +44,6 @@ def auth_view(request):
                 messages.error(request, "Invalid email or password")
 
             return redirect("auth")  # same page pe reload
-    
         
     return render(request, 'authentication.html') 
 
