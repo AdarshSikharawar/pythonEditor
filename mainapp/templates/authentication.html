@@ -25,21 +25,7 @@
 
                 <h1>Welcome Back!</h1>
                 <p class="subheading">Sign in to continue to PyCodeFlow.</p>
-
-                <form action="{% url 'auth' %}" method="POST">
-                    {% csrf_token %}
-                    <div class="form-group">
-                        <label for="email">Email</label>
-                        <input type="email" id="email" name="email" placeholder="you@example.com" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="password">Password</label>
-                        <input type="password" id="password" name="password" placeholder="••••••••" required>
-                    </div>
-
-
-                    {% if messages %}
+                {% if messages %}
                     <div>
                         {% for message in messages %}
                         <div class="message {{message.tags}}">
@@ -47,7 +33,19 @@
                         </div>
                         {% endfor %}
                     </div>
-                    {% endif %}
+                {% endif %}
+
+                <form action="{% url 'auth' %}" method="POST">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="login-email" name="email" placeholder="you@example.com" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="login-password" name="password" placeholder="••••••••" required>
+                    </div>
 
 
                     <button type="submit" name="form_type" value="login" class="login-btn">Login</button>
@@ -92,13 +90,15 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="confirm-password">Confirm Password</label>
-                        <input type="password" id="confirm-password" onkeyup="validate()" name="confirm-password"
-                            placeholder="••••••••" required>
+                        <p id="msg" class="text-danger"></p>
                     </div>
+
                     <div class="form-group">
-                        <p id="msg" class="text-danger"> hel</p>
+                        <label for="confirm-password">Confirm Password</label>
+                        <input type="password" id="confirm-password" onkeyup="validate()" name="confirm-password" 
+                        placeholder="••••••••" required>
                     </div>
+                    
 
                     <button type="submit" name="form_type" value="signup" class="login-btn">Sign Up</button>
                 </form>
