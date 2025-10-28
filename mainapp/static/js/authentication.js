@@ -11,7 +11,7 @@ function toggleForm(formId) {
 
 setTimeout(function () {
     const messages = document.querySelectorAll('.message');
-    messages.forEach(msg => msg.style.display = 'none');
+    messages.forEach(mssg => mssg.style.display = 'none');
 }, 3000);
 
 function validate() {

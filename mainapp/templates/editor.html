@@ -1,209 +1,134 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Agent Popup</title>
+    <title>PyCodeFlow Editor</title>
+    <link href="{% static 'styles/bootstrap.min.css' %}" rel="stylesheet">
+    {% comment %} <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"> {% endcomment %}
     <style>
-        /* Your CSS styles remain the same */
-        body {
-            font-family: Arial, sans-serif;
-        }
+        body { overflow: hidden; }
+        .main-row { height: calc(100vh - 118px); }
+        #editor-container { flex-grow: 1; min-height: 100px; }
+        .resizer { background: #dee2e6; height: 5px; cursor: ns-resize; flex-shrink: 0; }
+        #output-console { height: 200px; flex-shrink: 0; display: flex; flex-direction: column; }
+        #output-content { flex-grow: 1; overflow-y: auto; white-space: pre-wrap; word-wrap: break-word; }
+        .delete-icon { color: #dc3545; cursor: pointer; display: none; }
+        .list-group-item:hover .delete-icon { display: inline-block; }
 
-        #chatToggle {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            padding: 12px 20px;
-            background: #6a62d2;
-            color: white;
+        /* ✅ Custom Dialog Styles for Positioning and Animation */
+        #new-file-dialog {
+            margin: 70px 0 0 250px;
             border: none;
-            border-radius: 25px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-
-        #chatPopup {
-            position: fixed;
-            bottom: 80px;
-            right: 20px;
-            width: 350px;
-            height: 450px;
-            background: #fff;
-            border: 1px solid #ccc;
-            border-radius: 12px;
-            box-shadow: 0px 5px 20px rgba(0, 0, 0, 0.2);
-            display: none;
-            flex-direction: column;
-            overflow: hidden;
-        }
-
-        .chat-header {
-            background: #6a62d2;
-            color: white;
-            padding: 12px;
-            font-size: 18px;
-            font-weight: bold;
-        }
-
-        .chat-body {
-            flex: 1;
-            padding: 15px;
-            overflow-y: auto;
-            background: #f9f9f9;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .chat-footer {
-            display: flex;
-            border-top: 1px solid #ddd;
-        }
-
-        .chat-footer input[type="text"] {
-            flex: 1;
-            padding: 10px;
-            border: none;
-            outline: none;
-        }
-
-        .chat-footer button {
-            padding: 10px 15px;
-            background: #6a62d2;
-            border: none;
-            color: white;
-            cursor: pointer;
-        }
-
-        .message {
-            padding: 10px;
             border-radius: 8px;
-            max-width: 80%;
-            word-wrap: break-word;
+            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.2);
+            padding: 1.2rem;
+            width: 350px;
+            opacity: 0;
+            transform: scale(0.7) translateX(-20px);
+            transition: opacity 0.2s ease-out, transform 0.2s ease-out;
         }
-
-        .user-message {
-            background: #d2f8d2;
-            align-self: flex-end;
+        #new-file-dialog[open] {
+            opacity: 1;
+            transform: scale(1) translateX(0);
         }
-
-        .ai-message {
-            background: #cfcefa;
-            align-self: flex-start;
+        #new-file-dialog::backdrop {
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(0px);
+            opacity: 0;
+            transition: opacity 0.3s ease-out, backdrop-filter 0.2s ease-out;
+        }
+        #new-file-dialog[open]::backdrop {
+            opacity: 1;
+        }
+        #new-file-dialog form {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        #new-file-dialog menu {
+            padding: 0;
+            margin: 0;
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.5rem;
+            
         }
     </style>
 </head>
-
-<body>
-    <h1>Welcome to the Editor</h1>
-    <p>This is your main page content.</p>
-
-    <button id="chatToggle">Chat with AI</button>
-
-    <div id="chatPopup">
-        <div class="chat-header">Personal AI</div>
-
-        <div class="chat-body" id="chat-body">
-            <div class="message ai-message">Hello! How can I help you today?</div>
+<body class="d-flex flex-column vh-100">
+    <header class="navbar navbar-expand-sm navbar-light bg-white border-bottom px-3">
+        <a class="navbar-brand" href="{% url 'index' %}"><img src="{% static 'images/logo.svg' %}" alt="Logo" style="height: 30px;"></a>
+        <div class="mx-auto">
+            <button id="run-btn" class="btn btn-primary btn-sm"><i class="bi bi-play-fill"></i> Run</button>
+            <button id="clear-btn" class="btn btn-outline-secondary btn-sm"><i class="bi bi-trash"></i> Clear</button>
+            <button id="reset-btn" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-clockwise"></i> Reset</button>
+            <button id="save-btn" class="btn btn-outline-secondary btn-sm"><i class="bi bi-save"></i> Save</button>
+            <button id="download-btn" class="btn btn-outline-secondary btn-sm"><i class="bi bi-download"></i> Download .py</button>
         </div>
+        <span id="pyodide-status" class="navbar-text ms-auto fs-sm me-3">Initializing...</span>
+        <a href="{% url 'logout' %}" class="btn btn-sm btn-outline-danger">Logout</a>
+    </header>
 
-        <div class="chat-footer">
-            <form id="chat-form" style="display: flex; width: 100%;" method="POST" enctype="multipart/form-data">
-                {% csrf_token %}
-                <input type="text" id="message-input" name="message" placeholder="Type your message..." required>
-                <input type="file" name="image" id="image-input" style="display: none;">
-                <label for="image-input" style="padding: 10px; cursor: pointer;">📎</label>
-                <button type="submit">Send</button>
-            </form>
-
-
-
-
+    <div class="container-fluid flex-grow-1">
+        <div class="row main-row">
+            <aside class="col-lg-2 col-md-3 border-end d-flex flex-column p-3 bg-light">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h5>Project Files</h5>
+                    <button class="btn btn-sm btn-outline-primary" id="create-file-btn">
+                        <i class="bi bi-plus-lg"></i> New
+                    </button>
+                </div>
+                <ul id="file-list" class="list-group list-group-flush flex-grow-1">
+                </ul>
+                <div class="mt-auto pt-3 border-top">
+                    <div class="d-flex align-items-center">
+                        <img src="{% static 'images/avatar.png' %}" alt="User Avatar" class="rounded-circle" width="32" height="32">
+                        <span class="ms-2 small">{{ request.user.name|default:request.user.email }}</span>
+                    </div>
+                </div>
+            </aside>
+            <section class="col-lg-10 col-md-9 d-flex flex-column p-0">
+                <div id="editor-container"></div>
+                <div class="resizer" id="resizer"></div>
+                <div id="output-console" class="bg-dark text-light font-monospace">
+                    <div class="px-3 py-1 bg-secondary-subtle text-dark-emphasis small">Output</div>
+                    <pre id="output-content" class="p-2 mb-0"></pre>
+                </div>
+            </section>
         </div>
     </div>
+    
+    <footer class="container-fluid border-top py-3 bg-white">
+        <div class="d-flex justify-content-between align-items-center">
+            <p class="mb-0 text-muted small">&copy; 2024 PyCodeFlow. All rights reserved.</p>
+            <div>
+                <a href="#" class="text-muted text-decoration-none small mx-2">Quick Links</a>
+                <a href="#" class="text-muted text-decoration-none small mx-2">Legal</a>
+                <a href="#" class="text-muted mx-2"><i class="bi bi-github"></i></a>
+                <a href="#" class="text-muted mx-2"><i class="bi bi-twitter-x"></i>
+                </a><a href="#" class="text-muted mx-2"><i class="bi bi-linkedin"></i></a>
+            </div>
+    </footer>
 
-    <script>
-        const toggleBtn = document.getElementById("chatToggle");
-        const chatPopup = document.getElementById("chatPopup");
-        const chatForm = document.getElementById("chat-form");
-        const messageInput = document.getElementById("message-input");
-        const chatBody = document.getElementById("chat-body");
-
-        // Toggle popup visibility
-        toggleBtn.addEventListener("click", () => {
-            chatPopup.style.display = (chatPopup.style.display === "flex") ? "none" : "flex";
-        });
-
-        // Handle form submission with JavaScript
-        chatForm.addEventListener("submit", async (event) => {
-            event.preventDefault(); // stop reload
-
-            // 1. Get form data (including files)
-            const formData = new FormData(chatForm);
-            const userMessageText = formData.get('message');
-
-            // 2. Show user message immediately
-            if (userMessageText) {
-                const userMessageElem = document.createElement('div');
-                userMessageElem.className = 'message user-message';
-                userMessageElem.textContent = userMessageText;
-                chatBody.appendChild(userMessageElem);
-            }
-            chatBody.scrollTop = chatBody.scrollHeight;
-
-            // 3. Show temporary "Thinking..." message
-            const thinkingElem = document.createElement('div');
-            thinkingElem.className = 'message ai-message';
-            thinkingElem.textContent = '🧠 Thinking...';
-            chatBody.appendChild(thinkingElem);
-            chatBody.scrollTop = chatBody.scrollHeight;
-
-            // Clear form inputs
-            chatForm.reset();
-
-            try {
-                // 4. Send request to backend
-                const response = await fetch("{% url 'gemini_chat' %}", {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRFToken': formData.get('csrfmiddlewaretoken'),
-                    },
-                    body: formData,
-                });
-
-                if (!response.ok) {
-                    throw new Error(`Server error: ${response.statusText}`);
-                }
-
-                const data = await response.json();
-
-                // 5. Replace "Thinking..." with actual AI reply
-                thinkingElem.innerHTML = data.reply.replace(/\n/g, '<br>');
-
-                // 6. Agar image_url mila hai to image show karo
-                if (data.image_url) {
-                    const imgElem = document.createElement('img');
-                    imgElem.src = data.image_url;
-                    imgElem.className = 'chat-image';
-                    imgElem.style.maxWidth = '200px';
-                    imgElem.style.borderRadius = '8px';
-                    chatBody.appendChild(imgElem);
-                }
-
-            } catch (error) {
-                console.error('Fetch Error:', error);
-                thinkingElem.textContent = 'Sorry, something went wrong.';
-                thinkingElem.style.backgroundColor = '#ffdddd';
-            }
-
-            // 7. Scroll to bottom after AI reply
-            chatBody.scrollTop = chatBody.scrollHeight;
-        });
-
-
-    </script>
+    <dialog id="new-file-dialog">
+        <form method="dialog" id="new-file-form">
+            <h5 class="mb-3">Create New File</h5>
+            <div>
+                <label for="new-filename-input" class="form-label">Filename:</label>
+                <input type="text" class="form-control" id="new-filename-input" placeholder="e.g., test.py" required>
+            </div>
+            <menu>
+                <button type="reset" class="btn btn-sm btn-secondary">Cancel</button>
+                <button type="submit" class="btn btn-sm btn-primary" id="confirm-new-file-btn">Create</button>
+            </menu>
+        </form>
+    </dialog>
+    
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.26.1/full/pyodide.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.44.0/min/vs/loader.js"></script>
+    <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
+    <script src="{% static 'js/editor.js' %}"></script> 
 </body>
-
 </html>

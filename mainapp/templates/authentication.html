@@ -7,16 +7,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Authentication</title>
     <link rel="stylesheet" type="text/css" href="{% static 'styles/authentication.css' %}">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.8/css/bootstrap-grid.min.css"
+    <link href="{% static 'styles/bootstrap.min.css' %}" rel="stylesheet">
+    {% comment %} <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.8/css/bootstrap-grid.min.css"
         integrity="sha512-dOjUSaLkr6G2pwQ7ry9juX+iXw5602zg1kg8yH+guR3uSEidGyCnOEQnGlr7xwu/8WE+pVm1ZNqaIs5ETTIJQg=="
-        crossorigin="anonymous" referrerpolicy="no-referrer" />
+        crossorigin="anonymous" referrerpolicy="no-referrer" /> {% endcomment %}
 </head>
 
 <body>
 
     <div class="content-wrapper">
         <div class="image-section">
-            <img src="https://cdni.iconscout.com/illustration/premium/thumb/login-3305943-2757111.png"
+            <img src="{% static 'img/auth_image.webp' %}"
                 alt="Security illustration">
         </div>
 
