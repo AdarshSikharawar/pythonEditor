@@ -43,6 +43,14 @@ INSTALLED_APPS = [
     'mainapp',
 ]
 
+AUTH_USER_MODEL = 'mainapp.OurUser'
+
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+    
+]
+
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -86,6 +94,10 @@ DATABASES = {
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
+
+from django.contrib import admin
+from django.urls import path, include
+
 
 
 # Password validation

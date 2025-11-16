@@ -9,10 +9,17 @@ urlpatterns = [
 
     # URL for the editor page
     path('editor/', views.gemini_chat, name="gemini_chat"),
+    path('profile',views.profilepage, name="profile"),
     
     # API URLs
     path('api/save_code/', views.save_code_api, name='save_code_api'),
     path('api/load_code/', views.load_code_api, name='load_code_api'),
     path('api/delete_file/', views.delete_file_api, name='delete_file_api'),
-    
+    path("save-file-info/", views.save_file_info, name="save_file_info"),
+
+    path('edit/<int:file_id>/', views.edit_file, name='edit_file'),
+    path('download/<int:file_id>/', views.download_file, name='download_file'),
+    path('delete/<int:file_id>/', views.delete_file, name='delete_file'),
+   
 ]
+    

@@ -8,7 +8,8 @@
     <title>Authentication</title>
     <link rel="stylesheet" type="text/css" href="{% static 'styles/authentication.css' %}">
     <link href="{% static 'styles/bootstrap.min.css' %}" rel="stylesheet">
-    {% comment %} <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.8/css/bootstrap-grid.min.css"
+    {% comment %}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.8/css/bootstrap-grid.min.css"
         integrity="sha512-dOjUSaLkr6G2pwQ7ry9juX+iXw5602zg1kg8yH+guR3uSEidGyCnOEQnGlr7xwu/8WE+pVm1ZNqaIs5ETTIJQg=="
         crossorigin="anonymous" referrerpolicy="no-referrer" /> {% endcomment %}
 </head>
@@ -17,8 +18,7 @@
 
     <div class="content-wrapper">
         <div class="image-section">
-            <img src="{% static 'img/auth_image.webp' %}"
-                alt="Security illustration">
+            <img src="{% static 'img/auth_image.webp' %}" alt="Security illustration">
         </div>
 
         <div id="loginForm" class="form-section active">
@@ -27,13 +27,13 @@
                 <h1>Welcome Back!</h1>
                 <p class="subheading">Sign in to continue to PyCodeFlow.</p>
                 {% if messages %}
-                    <div>
-                        {% for message in messages %}
-                        <div class="message {{message.tags}}">
-                            {{ message }}
-                        </div>
-                        {% endfor %}
+                <div>
+                    {% for message in messages %}
+                    <div class="message {{message.tags}}">
+                        {{ message }}
                     </div>
+                    {% endfor %}
+                </div>
                 {% endif %}
 
                 <form action="{% url 'auth' %}" method="POST">
@@ -96,10 +96,10 @@
 
                     <div class="form-group">
                         <label for="confirm-password">Confirm Password</label>
-                        <input type="password" id="confirm-password" onkeyup="validate()" name="confirm-password" 
-                        placeholder="••••••••" required>
+                        <input type="password" id="confirm-password" onkeyup="" name="confirm-password"
+                            placeholder="••••••••" required>
                     </div>
-                    
+
 
                     <button type="submit" name="form_type" value="signup" class="login-btn">Sign Up</button>
                 </form>
@@ -117,7 +117,7 @@
 
 
 
-<script src="{% static 'js/authentication.js' %}"></script>
+    <script src="{% static 'js/authentication.js' %}"></script>
 
 </body>
 

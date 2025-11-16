@@ -2,6 +2,7 @@
 
 from django.db import models
 from django.contrib.auth.models import AbstractUser, BaseUserManager
+from django.conf import settings
 
 # --- YEH MANAGER ADD KARNA ZAROORI THA ---
 class CustomUserManager(BaseUserManager):
@@ -9,7 +10,7 @@ class CustomUserManager(BaseUserManager):
     Custom user model manager jahan email unique identifier hai
     authentication ke liye username ke bajaye.
     """
-    def create_user(self, email, password, **extra_fields):
+    def create_user(self, email, password,  **extra_fields):
         """
         Ek User banayein aur save karein diye gaye email aur password ke saath.
         """
@@ -52,3 +53,17 @@ class OurUser(AbstractUser):
 
     def __str__(self):
         return self.email
+    
+
+class UserFile(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    file_name = models.CharField(max_length=255)
+    file_path = models.CharField(max_length=500)
+    file_size = models.FloatField(default=0.0)  # size in KB
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.file_name} ({self.user.email})"
+
+    def size_in_kb(self):
+        return round(self.file_size, 2)
