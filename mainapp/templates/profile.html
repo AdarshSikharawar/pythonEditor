@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.8/css/bootstrap-grid.min.css"
         integrity="sha512-dOjUSaLkr6G2pwQ7ry9juX+iXw5602zg1kg8yH+guR3uSEidGyCnOEQnGlr7xwu/8WE+pVm1ZNqaIs5ETTIJQg=="
         crossorigin="anonymous" referrerpolicy="no-referrer" />
+
 </head>
 
 <body>
@@ -82,23 +83,27 @@
         </div>
     </div> -->
 
-    <div class="container py-4">
-        <h2 class="mb-3">👋 Welcome, {{ request.user.name }}</h2>
-        <p class="text-muted">{{ request.user.email }}</p>
+    <div class="container py-4 text-center">
+        <h2 class="fw-bold text-center"> Your Profile </h2>
+        <img src="static/img/code.jpg" class="" height="80px" width="80px" style="border-radius: 100%;" alt=""
+            class="text-center">
+        <h2 class="mb-2 text-center">👋 Welcome, {{ request.user.name }}</h2>
+        <p class="text-muted text-center">{{ request.user.email }}</p>
+        <button type="button" class="ms- btn btn-outline-secondary">Edit Profile</button>
 
         <hr>
 
-        <h4>Your Files</h4>
+        <h4>Saved Files</h4>
 
         {% if files %}
         <table class="table table-striped table-hover mt-3">
-            <thead class="table-dark">
+            <thead class="table-dark" style="background-color: #6a62d2;">
                 <tr>
-                    <th>#</th>
-                    <th>File Name</th>
-                    <th>Size (KB)</th>
-                    <th>Created On</th>
-                    <th>Action </th>
+                    <th style="background-color: #6a62d2;"> # </th>
+                    <th style="background-color: #6a62d2;">File Name</th>
+                    <th style="background-color: #6a62d2;">Size (KB)</th>
+                    <th style="background-color: #6a62d2;">Created On</th>
+                    <th style="background-color: #6a62d2;">Action </th>
             </thead>
             <tbody>
                 {% for file in files %}
@@ -108,9 +113,24 @@
                     <td>{{ file.size_in_kb }}</td>
                     <td>{{ file.created_at|date:"M d, Y H:i" }}</td>
                     <td>
-                        <button class="btn btn-sm btn-primary" onclick="editFile('{{ file.id }}')">Edit</button>
-                        <a href="{% url 'download_file' file.id %}" class="btn btn-sm btn-success">Download</a>
-                        <button class="btn btn-sm btn-danger" onclick="deleteFile('{{ file.id }}')">Delete</button>
+                        <form method="POST" action="{% url 'delete_file' file.id %}" style="display:inline;">
+                            {% csrf_token %}
+
+                            <button type="submit" class="btn btn-sm btn-danger"
+                                onclick="return confirm('क्या आप वाकई फ़ाइल \'{{ file.file_name }}\' को डिलीट करना चाहते हैं?');">
+                                Delete
+                            </button>
+                        </form>
+
+                        <form method="GET" action="{% url 'download_file' file.id %}" style="display:inline;">
+                            {% csrf_token %}
+
+                            <button type="submit" class="btn btn-sm btn-success"
+                                onclick="return confirm('क्या आप वाकई फ़ाइल \'{{ file.file_name }}\' को डिलीट करना चाहते हैं?');">
+                                Download
+                            </button>
+                        </form>
+
                     </td>
 
                 </tr>
@@ -122,7 +142,7 @@
         {% endif %}
     </div>
 
-    <script src="{% static 'js/profile.js' %}"></script>
+    <script src="{% static 'js/profile2.js' %}"></script>
 </body>
 
 </html>

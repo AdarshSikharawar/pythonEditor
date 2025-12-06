@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect , get_object_or_404
 from .models import OurUser
 from django.http import JsonResponse, FileResponse, Http404 ,HttpResponseNotFound
 from django.contrib import messages
@@ -11,6 +11,7 @@ from django.conf import settings
 import json
 from django.views.decorators.csrf import csrf_exempt
 from .models import UserFile
+import mimetypes
 
 
 genai.configure(api_key="YOUR_API_KEY_HERE")
@@ -20,8 +21,7 @@ def index(request):
 
 
 
-def index (request):
-    return render (request, 'index.html')
+
 
 
 def auth_view(request):
@@ -135,24 +135,9 @@ def get_file_content(request, filename):
     else:
         return HttpResponseNotFound('File not found')
 
-@csrf_exempt
-def delete_file(request, filename):
-    user_dir = get_user_code_dir(request.user)
-    file_path = os.path.join(user_dir, filename)
-    if os.path.exists(file_path):
-        os.remove(file_path)
-        return JsonResponse({'status': 'success'})
-    else:
-        return HttpResponseNotFound('File not found')
 
-def download_file(request, filename):
-    import os
-    user_dir = os.path.join(settings.MEDIA_ROOT, f"user_{request.user.id}")
-    file_path = os.path.join(user_dir, filename)
-    if os.path.exists(file_path):
-        return FileResponse(open(file_path, "rb"), as_attachment=True, filename=filename)
-    else:
-        raise Http404("File not found")
+
+
 
 
 @csrf_exempt
@@ -199,31 +184,45 @@ def load_code_api(request):
 @csrf_exempt
 @login_required
 
-def delete_file_api(request):
+
+
+
+def delete_file(request, file_id):
+    user_file = get_object_or_404(UserFile, id= file_id)
+    if user_file.user != request.user:
+        return redirect('profile')
+    
     if request.method == 'POST':
-        try:
-            data = json.loads(request.body)
-            filename = data.get('filename')
+        user_file.delete()
+        # messages.success(request, f"फ़ाइल '{user_file.file_name}")
 
-            if not filename or filename == 'main.py':
-                return JsonResponse({'status': 'error', 'message': 'Invalid or protected file.'}, status=400)
-
-            user_dir = get_user_code_dir(request.user)
-            file_path = os.path.join(user_dir, filename)
-
-            if os.path.exists(file_path):
-                os.remove(file_path)
-                return JsonResponse({'status': 'success', 'message': f'File {filename} deleted.'})
-            else:
-                return JsonResponse({'status': 'error', 'message': 'File not found.'}, status=404)
-        except Exception as e:
-            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
-
-    return JsonResponse({'status': 'error', 'message': 'Invalid request method.'}, status=405)
+    return redirect('profile')
 
 
 
+def download_file(request, file_id):
+    user_file = get_object_or_404(UserFile, id=file_id)
 
+    # user verify
+    if user_file.user != request.user:
+        return redirect('profile')
+
+    file_path = user_file.file_path   # <-- yahi use hoga
+
+    # path exist check
+    if not os.path.exists(file_path):
+        return redirect('profile')
+
+    # MIME type detect
+    mime_type, _ = mimetypes.guess_type(file_path)
+    if mime_type is None:
+        mime_type = 'application/octet-stream'
+
+    # return file response
+    response = FileResponse(open(file_path, 'rb'), content_type=mime_type)
+    response['Content-Disposition'] = f'attachment; filename="{user_file.file_name}"'
+
+    return response
 
 
 

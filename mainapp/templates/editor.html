@@ -194,8 +194,8 @@
 </head>
 
 <body class="d-flex flex-column vh-100">
-    <p>Current User: {{ request.user }}</p>
-    <p>user name: {{ request.user.name }}</p>
+    <!-- <p>Current User: {{ request.user }}</p>
+    <p>user name: {{ request.user.name }}</p> -->
 
     <!-- ✅ Header -->
     <header class="navbar navbar-expand-sm navbar-light bg-white border-bottom px-3">
@@ -204,27 +204,31 @@
         </div>
 
         <div class="mx-auto d-flex flex-wrap justify-content-center gap-2">
-            <button id="clear-btn" class="btn btn-outline-primary btn-sm">
+            <button id="clear-btn" class="btn btn-outline-primary btn-sm"
+                style="color: #6a62d2; border-color: #6a62d2 ;">
                 <i class="bi bi-trash"></i> Clear
             </button>
-            <button id="reset-btn" class="btn btn-outline-primary btn-sm">
+            <button id="reset-btn" class="btn btn-outline-primary btn-sm"
+                style="color: #6a62d2; border-color: #6a62d2 ;">
                 <i class="bi bi-arrow-clockwise"></i> Reset
             </button>
-            <button id="save-btn" class="btn btn-outline-primary btn-sm">
+            <button id="save-btn" class="btn btn-outline-primary btn-sm"
+                style="color: #6a62d2; border-color: #6a62d2 ;">
                 <i class="bi bi-save"></i> Save
             </button>
-            <button id="download-btn" class="btn btn-outline-primary btn-sm">
+            <button id="download-btn" class="btn btn-outline-primary btn-sm"
+                style="color: #6a62d2; border-color: #6a62d2 ;">
                 <i class="bi bi-download"></i> Download.py
             </button>
             <span id="pyodide-status" class="navbar-text small text-muted">Initializing...</span>
         </div>
 
-        <button id="run-btn" class="btn btn-primary btn-sm me-2">
+        <button id="run-btn" class="btn btn-primary btn-sm me-2" style="background-color: #6a62d2" ;>
             <i class="bi bi-play-fill"></i> Run
         </button>
         <a href="{% url 'logout' %}" class="btn btn-sm btn-outline-danger">Logout</a>
 
-        <a href="{% url 'profile' %}" class="btn btn-sm btn-outline-success rounded-5 ms-2">Profile</a>
+        <a href="{% url 'profile' %}" class="btn btn-sm btn-outline-success  ms-2">Profile</a>
     </header>
 
     <!-- ✅ Main Layout -->
@@ -234,11 +238,13 @@
             <aside class="col-lg-2 col-md-3 border-end d-flex flex-column p-3 bg-light">
                 <div class="d-flex justify-content-between align-items-center mb-2">
                     <h6 class="mb-0">Project Files</h6>
-                    <button class="btn btn-sm btn-outline-primary" id="create-file-btn">
+                    <button class="btn btn-sm btn-outline-primary" style="color: #6a62d2; border-color: #6a62d2;"
+                        id="create-file-btn">
                         <i class="bi bi-plus-lg"></i>
                     </button>
                 </div>
-                <ul id="file-list" class="list-group list-group-flush flex-grow-1"></ul>
+                <ul id="file-list" class="list-group list-group-flush flex-grow-1" >
+                </ul>
 
                 <div class="mt-auto pt-3 border-top">
                     <div class="d-flex align-items-center">
@@ -249,7 +255,7 @@
 
                         {% if user %}
 
-                        <b style="color: #8b0000; display: inline-block;"> {{ user.name }}</b>
+                        <!-- <b style="color: #8b0000; display: inline-block;"> {{ user.name }}</b> -->
 
                         {% endif %}
 

@@ -1,5 +1,4 @@
 // ✅ FINAL MERGED VERSION (Dialog-based file creation + clean variable setup)
-
 let editor, pyodide;
 let currentFile = 'main.py';
 let userFiles = ['main.py'];
@@ -133,17 +132,18 @@ const renderFileList = () => {
         li.className = `list-group-item list-group-item-action d-flex justify-content-between align-items-center ${filename === currentFile ? 'active' : ''}`;
         li.dataset.filename = filename;
         li.style.cursor = 'pointer';
+        li.style.backgroundColor = '#6a62d2';
 
         const fileNameSpan = document.createElement('span');
         fileNameSpan.innerHTML = `<i class="bi bi-filetype-py"></i> ${filename}`;
         li.appendChild(fileNameSpan);
 
-        if (filename !== 'main.py') {
-            const deleteIcon = document.createElement('i');
-            deleteIcon.className = 'bi bi-trash-fill delete-icon';
-            deleteIcon.dataset.filename = filename;
-            li.appendChild(deleteIcon);
-        }
+        // if (filename !== 'main.py') {
+        //     const deleteIcon = document.createElement('i');
+        //     deleteIcon.className = 'bi bi-trash-fill delete-icon';
+        //     deleteIcon.dataset.filename = filename;
+        //     li.appendChild(deleteIcon);
+        // }
 
         fileList.appendChild(li);
     });
@@ -244,101 +244,12 @@ const createNewFile = async () => {
     }
 };
 
-// async function openFile(filename) {
-//     try {
-//         const res = await fetch(`/get-file-content/${filename}/`);
-//         if (!res.ok) throw new Error("File not found");
-//         const data = await res.json();
-
-//         editorContainer.setValue(data.content); // file ka content editor me daal do
-//         currentFile = filename;
-//         alert(`Editing: ${filename}`);
-//     } catch (error) {
-//         console.error("Error opening file:", error);
-//         alert("Couldn't open file!");
-//     }
-// }
-
-// function getCookie(name) {
-//     let cookieValue = null;
-//     if (document.cookie && document.cookie !== "") {
-//         const cookies = document.cookie.split(";");
-//         for (let cookie of cookies) {
-//             cookie = cookie.trim();
-//             if (cookie.startsWith(name + "=")) {
-//                 cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-//                 break;
-//             }
-//         }
-//     }
-//     return cookieValue;
-// }
 
 
-// async function saveEditedFile() {
-//     if (!currentFile) {
-//         alert("No file selected!");
-//         return;
-//     }
-
-//     const content = editor.getValue();
-//     const fileSize = (new Blob([content]).size / 1024).toFixed(2);
-
-//     const res = await fetch("/update-file/", {
-//         method: "POST",
-//         headers: {
-//             "Content-Type": "application/json",
-//             "X-CSRFToken": getCookie("csrftoken")
-//         },
-//         body: JSON.stringify({
-//             file_name: currentFile,
-//             content: content,
-//             file_size: fileSize
-//         })
-//     });
-
-//     const data = await res.json();
-//     if (data.status === "success") {
-//         alert("File saved successfully!");
-//     } else {
-//         alert("Error saving file.");
-//     }
-// }
 
 
-// async function deleteFile(filename) {
-//     if (!confirm(`Delete ${filename}?`)) return;
 
-//     const res = await fetch("/delete-file/", {
-//         method: "POST",
-//         headers: {
-//             "Content-Type": "application/json",
-//             "X-CSRFToken": getCookie("csrftoken")
-//         },
-//         body: JSON.stringify({ file_name: filename })
-//     });
 
-//     const data = await res.json();
-//     if (data.status === "success") {
-//         alert("File deleted!");
-//         location.reload(); // page refresh karke updated list dikha de
-//     } else {
-//         alert("Error deleting file.");
-//     }
-// }
-
-// function downloadFile(filename) {
-//     const blob = new Blob([editor.getValue()], { type: "text/plain" });
-//     const link = document.createElement("a");
-//     link.href = URL.createObjectURL(blob);
-//     link.download = filename;
-//     link.click();
-//     URL.revokeObjectURL(link.href);
-// }
-
-// document.addEventListener("DOMContentLoaded", () => {
-//     initializeApp(); // ya jo bhi tumhara main function hai
-// });
 
 // ✅ RESIZER
 
@@ -410,6 +321,7 @@ const initializeApp = () => {
         }
     });
     saveBtn.addEventListener('click', () => saveFileContent(currentFile, editor.getValue()));
+
     downloadBtn.addEventListener('click', () => {
         const blob = new Blob([editor.getValue()], { type: 'text/plain' });
         const a = document.createElement('a');

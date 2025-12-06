@@ -44,6 +44,13 @@ class OurUser(AbstractUser):
     email = models.EmailField(unique=True)
     name = models.CharField(max_length=100)
 
+    # profile_photo = models.ImageField(
+    #     upload_to='profile_photos/', 
+    #     default='profile_photos/default.png', 
+    #     blank=True, 
+    #     null=True
+    # )
+
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['name']
 
@@ -61,6 +68,7 @@ class UserFile(models.Model):
     file_path = models.CharField(max_length=500)
     file_size = models.FloatField(default=0.0)  # size in KB
     created_at = models.DateTimeField(auto_now_add=True)
+    #uploaded_file = models.FileField(upload_to='user_files/')
 
     def __str__(self):
         return f"{self.file_name} ({self.user.email})"
