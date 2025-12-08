@@ -8,12 +8,17 @@ urlpatterns = [
     path('logout/', views.logout_view, name='logout'),
 
     # URL for the editor page
-    path('editor/', views.gemini_chat, name="gemini_chat"),
-    path('profile',views.profilepage, name="profile"),
+    path('dashboard/', views.dashboard, name="dashboard"),
+    
+    path('api/chat/', views.chat_api, name="chat_api"),
+    path('profile/', views.profilepage, name="profile"),
+    path('profile/update/', views.update_profile, name='update_profile'),
     
     # API URLs
     path('api/save_code/', views.save_code_api, name='save_code_api'),
     path('api/load_code/', views.load_code_api, name='load_code_api'),
+    path('api/update_theme/', views.update_theme, name='update_theme'),
+    path('api/delete_file/', views.delete_file_api, name='delete_file_api'),
    
     path("save-file-info/", views.save_file_info, name="save_file_info"),
 

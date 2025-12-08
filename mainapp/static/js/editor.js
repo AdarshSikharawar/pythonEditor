@@ -34,44 +34,6 @@ print(f"Mean: {mean_val:.2f}")
 print(f"Standard Deviation: {std_dev:.2f}")
 `;
 
-// ✅ CUSTOM STDIN (input() handler)
-const customStdin = () => {
-    return new Promise((resolve) => {
-        const inputContainer = document.createElement('div');
-        inputContainer.className = 'd-flex align-items-center my-1 p-2 bg-dark';
-        inputContainer.style.borderLeft = '3px solid #ffc107';
-
-        const prompt = document.createElement('span');
-        prompt.textContent = '>>> ';
-        prompt.className = 'text-warning me-2';
-
-        const inputField = document.createElement('input');
-        inputField.type = 'text';
-        inputField.className = 'form-control form-control-sm bg-secondary text-white border-0';
-        inputField.placeholder = 'Type your input and press Enter...';
-        inputField.style.flex = '1';
-
-        inputContainer.appendChild(prompt);
-        inputContainer.appendChild(inputField);
-        outputContent.appendChild(inputContainer);
-        outputContent.scrollTop = outputContent.scrollHeight;
-        setTimeout(() => inputField.focus(), 50);
-
-        inputField.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                const value = inputField.value;
-                const echoSpan = document.createElement('span');
-                echoSpan.textContent = value + '\n';
-                echoSpan.className = 'text-info';
-                inputContainer.remove();
-                outputContent.appendChild(echoSpan);
-                outputContent.scrollTop = outputContent.scrollHeight;
-                resolve(value);
-            }
-        });
-    });
-};
-
 // ✅ Helper Functions
 const setStatusText = (text, type = 'info') => {
     pyodideStatus.textContent = text;
@@ -132,21 +94,87 @@ const renderFileList = () => {
         li.className = `list-group-item list-group-item-action d-flex justify-content-between align-items-center ${filename === currentFile ? 'active' : ''}`;
         li.dataset.filename = filename;
         li.style.cursor = 'pointer';
-        li.style.backgroundColor = '#6a62d2';
+        // Removed hardcoded background color to allow CSS active state to work
 
         const fileNameSpan = document.createElement('span');
         fileNameSpan.innerHTML = `<i class="bi bi-filetype-py"></i> ${filename}`;
         li.appendChild(fileNameSpan);
 
-        // if (filename !== 'main.py') {
-        //     const deleteIcon = document.createElement('i');
-        //     deleteIcon.className = 'bi bi-trash-fill delete-icon';
-        //     deleteIcon.dataset.filename = filename;
-        //     li.appendChild(deleteIcon);
-        // }
+        // Create container for separator and icon/badge
+        const actionContainer = document.createElement('div');
+        actionContainer.style.display = 'flex';
+        actionContainer.style.alignItems = 'center';
+        actionContainer.style.gap = '8px';
 
+        // Add separator border
+
+
+        if (filename === 'main.py') {
+
+            const separator = document.createElement('div');
+            separator.style.width = '2px';
+            separator.style.height = '20px';
+            separator.style.backgroundColor = 'var(--glass-border)';
+            separator.style.opacity = '1';
+            actionContainer.appendChild(separator);
+
+            // Show "Default" badge for main.py
+            const defaultBadge = document.createElement('span');
+            defaultBadge.textContent = 'Default';
+            defaultBadge.style.fontSize = '0.75rem';
+            defaultBadge.style.color = 'var(--text-light)';
+            defaultBadge.style.opacity = '0.7';
+            defaultBadge.style.fontWeight = '500';
+            actionContainer.appendChild(defaultBadge);
+        } else {
+            // Add delete icon for other files
+            const deleteIcon = document.createElement('i');
+            deleteIcon.className = 'bi bi-trash-fill delete-icon';
+            deleteIcon.dataset.filename = filename;
+            deleteIcon.style.color = '#dc3545';
+            deleteIcon.style.cursor = 'pointer';
+            deleteIcon.title = 'Delete file';
+            actionContainer.appendChild(deleteIcon);
+        }
+
+        li.appendChild(actionContainer);
         fileList.appendChild(li);
     });
+};
+
+const deleteFile = async (filename) => {
+    if (!confirm(`Are you sure you want to delete "${filename}"?`)) {
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/delete_file/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ filename })
+        });
+
+        const result = await response.json();
+
+        if (result.status === 'success') {
+            // Remove from userFiles array
+            userFiles = userFiles.filter(f => f !== filename);
+
+            // If deleted file was active, switch to main.py or first available file
+            if (currentFile === filename) {
+                currentFile = userFiles.includes('main.py') ? 'main.py' : (userFiles[0] || 'main.py');
+                await loadFileContent(currentFile);
+            }
+
+            // Re-render file list
+            renderFileList();
+            addToOutput(`File "${filename}" deleted successfully.\n`, 'success');
+        } else {
+            addToOutput(`Error deleting file: ${result.message}\n`, 'stderr');
+        }
+    } catch (error) {
+        addToOutput(`Network error: ${error}\n`, 'stderr');
+    }
 };
 
 const loadFileContent = async (filename) => {
@@ -193,11 +221,12 @@ const initPyodide = async () => {
         if (typeof loadPyodide === 'undefined') {
             throw new Error('Pyodide CDN not loaded. Please refresh the page.');
         }
-        pyodide = await loadPyodide({ stdin: customStdin });
+        pyodide = await loadPyodide();
+
         setStatusText('Loading NumPy...');
         await pyodide.loadPackage('numpy');
         setStatusText('Ready', 'success');
-        addToOutput('✅ Python environment ready! Run your code with the "Run" button.\n', 'success');
+        addToOutput('✅ Python environment ready! Run your code with "CTRL+Alt+N" or "Run" button.\n', 'success');
     } catch (error) {
         setStatusText('Pyodide Failed!', 'error');
         addToOutput(`❌ Fatal Error: ${error.message}`, 'stderr');
@@ -206,15 +235,20 @@ const initPyodide = async () => {
 
 const runCode = async () => {
     if (!pyodide) {
-        addToOutput('⚠️ Pyodide is not ready yet. Please wait...', 'stderr');
+        addToOutput('⚠️ Pyodide is not ready yet. Please wait...', 'stdout');
         return;
     }
-    addToOutput(`\n▶️ Running ${currentFile}...\n`, 'success');
+
+    // Clear output and show running message
+    outputContent.innerHTML = '';
+    addToOutput(`▶️ Running ${currentFile}...\n`, 'success');
+
     try {
         pyodide.setStdout({ batched: (s) => addToOutput(s, 'stdout') });
         pyodide.setStderr({ batched: (s) => addToOutput(s, 'stderr') });
+
         await pyodide.runPythonAsync(editor.getValue());
-        addToOutput('\n✅ Execution Finished\n', 'success');
+        addToOutput('\n✅ Execution Finished', 'success');
     } catch (err) {
         addToOutput(`\n❌ Error:\n${err.toString()}`, 'stderr');
     }
@@ -245,12 +279,6 @@ const createNewFile = async () => {
 };
 
 
-
-
-
-
-
-
 // ✅ RESIZER
 
 const setupResizer = () => {
@@ -265,12 +293,54 @@ const setupResizer = () => {
 
     document.addEventListener('mousemove', (e) => {
         if (!isResizing) return;
-        const newTopHeight = e.clientY - editorArea.getBoundingClientRect().top;
-        const totalHeight = editorArea.clientHeight;
+        const containerRect = editorArea.getBoundingClientRect();
+        const newEditorHeight = e.clientY - containerRect.top;
+        const totalHeight = containerRect.height;
+        const resizerHeight = resizer.offsetHeight;
+        const newOutputHeight = totalHeight - newEditorHeight - resizerHeight;
 
-        if (newTopHeight > 100 && (totalHeight - newTopHeight - resizer.offsetHeight) > 100) {
-            editorContainer.style.height = `${newTopHeight}px`;
-            outputConsole.style.height = `${totalHeight - newTopHeight - resizer.offsetHeight}px`;
+        // Minimum heights for both sections
+        if (newEditorHeight > 100 && newOutputHeight > 100) {
+            // Use flex-basis instead of height for better flex compatibility
+            editorContainer.style.flexBasis = `${newEditorHeight}px`;
+            editorContainer.style.flexGrow = '0';
+            editorContainer.style.flexShrink = '0';
+
+            outputConsole.style.flexBasis = `${newOutputHeight}px`;
+            outputConsole.style.flexGrow = '0';
+            outputConsole.style.flexShrink = '0';
+        }
+    });
+
+    document.addEventListener('mouseup', () => {
+        if (isResizing) {
+            isResizing = false;
+            document.body.style.cursor = 'default';
+        }
+    });
+};
+
+
+const setupSidebarResizer = () => {
+    const sidebarResizer = document.getElementById('sidebar-resizer');
+    const sidebar = document.querySelector('aside');
+    let isResizing = false;
+
+    sidebarResizer.addEventListener('mousedown', (e) => {
+        isResizing = true;
+        document.body.style.cursor = 'ew-resize';
+        e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', (e) => {
+        if (!isResizing) return;
+
+        const newWidth = e.clientX;
+
+        // Set min and max width constraints
+        if (newWidth > 150 && newWidth < 500) {
+            sidebar.style.width = `${newWidth}px`;
+            sidebar.style.flex = 'none'; // Override flex behavior
         }
     });
 
@@ -302,11 +372,101 @@ function saveFileToServer(filename, content = "") {
         .catch(err => console.error("Error:", err));
 }
 
+const themeColors = {
+    'vs-dark': {
+        '--bg-dark': '#1e1e1e',
+        '--bg-dark-secondary': '#252526',
+        '--text-light': '#d4d4d4',
+        '--glass-border': 'rgba(255, 255, 255, 0.1)',
+        '--card-bg': 'rgba(30, 30, 30, 0.95)',
+        '--card-border': 'rgba(255, 255, 255, 0.1)'
+    },
+    'vs-light': {
+        '--bg-dark': '#ffffff',
+        '--bg-dark-secondary': '#f3f3f3',
+        '--text-light': '#000000',
+        '--glass-border': 'rgba(0, 0, 0, 0.1)',
+        '--card-bg': 'rgba(255, 255, 255, 0.95)',
+        '--card-border': 'rgba(0, 0, 0, 0.1)'
+    },
+    'hc-black': {
+        '--bg-dark': '#000000',
+        '--bg-dark-secondary': '#000000',
+        '--text-light': '#ffffff',
+        '--glass-border': '#ffffff',
+        '--card-bg': '#000000',
+        '--card-border': '#ffffff'
+    },
+    'monokai': {
+        '--bg-dark': '#272822',
+        '--bg-dark-secondary': '#1e1f1c',
+        '--text-light': '#f8f8f2',
+        '--glass-border': 'rgba(255, 255, 255, 0.1)',
+        '--card-bg': 'rgba(39, 40, 34, 0.95)',
+        '--card-border': 'rgba(255, 255, 255, 0.1)'
+    },
+    'night-owl': {
+        '--bg-dark': '#011627',
+        '--bg-dark-secondary': '#0b2942',
+        '--text-light': '#d6deeb',
+        '--glass-border': 'rgba(214, 222, 235, 0.1)',
+        '--card-bg': 'rgba(1, 22, 39, 0.95)',
+        '--card-border': 'rgba(214, 222, 235, 0.1)'
+    }
+};
+
+const applyThemeStyles = (themeName) => {
+    const colors = themeColors[themeName] || themeColors['vs-dark'];
+    const root = document.documentElement;
+    for (const [key, value] of Object.entries(colors)) {
+        root.style.setProperty(key, value);
+    }
+    // Toggle light class for Bootstrap/Scrollbars
+    if (themeName === 'vs-light') {
+        document.body.classList.add('light-mode');
+    } else {
+        document.body.classList.remove('light-mode');
+    }
+};
+
+// ✅ THEME HANDLER
+window.changeTheme = (themeName) => {
+    console.log("Switching theme to:", themeName);
+    if (typeof monaco === 'undefined') {
+        console.error("Monaco is not defined.");
+        return;
+    }
+
+    // Ensure custom themes are defined (if coming from cold start or different context)
+    if (window.ensureThemesDefined) {
+        window.ensureThemesDefined();
+    }
+
+    if (editor) {
+        monaco.editor.setTheme(themeName);
+    }
+
+    // ✅ Apply Global Styles
+    applyThemeStyles(themeName);
+
+    // Save to server
+    fetch("/api/update_theme/", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": document.cookie.match(/csrftoken=([\w-]+)/)?.[1] || ""
+        },
+        body: JSON.stringify({ theme: themeName })
+    })
+        .catch(err => console.error("Error saving theme:", err));
+};
+
 
 
 // ✅ INITIALIZE APP
 const initializeApp = () => {
     setupResizer();
+    setupSidebarResizer();
 
     runBtn.addEventListener('click', runCode);
     clearBtn.addEventListener('click', () => {
@@ -357,19 +517,81 @@ const initializeApp = () => {
     // ✅ Load Monaco and Pyodide
     require.config({ paths: { 'vs': 'https://cdn.jsdelivr.net/npm/monaco-editor@0.44.0/min/vs' } });
     require(['vs/editor/editor.main'], async () => {
+
+        // ✅ Define Custom Themes Helper
+        const defineCustomThemes = () => {
+            monaco.editor.defineTheme('monokai', {
+                base: 'vs-dark',
+                inherit: true,
+                rules: [
+                    { token: '', background: '272822' },
+                    { token: 'comment', foreground: '75715e' },
+                    { token: 'keyword', foreground: 'f92672' },
+                    { token: 'string', foreground: 'e6db74' },
+                    { token: 'number', foreground: 'ae81ff' },
+                    { token: 'type', foreground: '66d9ef' },
+                    { token: 'operator', foreground: 'f92672' },
+                    { token: 'delimiter', foreground: 'f8f8f2' }
+                ],
+                colors: {
+                    'editor.background': '#272822',
+                    'editor.foreground': '#f8f8f2',
+                    'editorCursor.foreground': '#f8f8f0',
+                    'editor.selectionBackground': '#49483e',
+                    'editor.lineHighlightBackground': '#3e3d32'
+                }
+            });
+
+            monaco.editor.defineTheme('night-owl', {
+                base: 'vs-dark',
+                inherit: true,
+                rules: [
+                    { token: '', background: '011627' },
+                    { token: 'comment', foreground: '637777', fontStyle: 'italic' },
+                    { token: 'keyword', foreground: 'c792ea' },
+                    { token: 'string', foreground: 'ecc48d' },
+                    { token: 'number', foreground: 'f78c6c' },
+                    { token: 'type', foreground: '82aaff' },
+                    { token: 'operator', foreground: 'c792ea' },
+                    { token: 'delimiter', foreground: 'd6deeb' }
+                ],
+                colors: {
+                    'editor.background': '#011627',
+                    'editor.foreground': '#d6deeb',
+                    'editorCursor.foreground': '#80a4c2',
+                    'editor.selectionBackground': '#1d3b53',
+                    'editor.lineHighlightBackground': '#0b2942'
+                }
+            });
+        };
+
+        // Call it immediately
+        defineCustomThemes();
+
+        // Make it available globally just in case
+        window.ensureThemesDefined = defineCustomThemes;
+
         editor = monaco.editor.create(editorContainer, {
             value: '',
             language: 'python',
-            theme: 'vs-light',
+            theme: window.userTheme || 'vs-dark', // Use saved theme or default
             automaticLayout: true,
             fontSize: 14,
             minimap: { enabled: false },
             lineNumbers: 'on'
         });
 
+        // ✅ Apply initial global theme
+        if (typeof applyThemeStyles !== 'undefined') {
+            applyThemeStyles(window.userTheme || 'vs-dark');
+        }
+
         setupAutoSave(editor);
         await loadInitialFiles();
         initPyodide();
+
+        // Keyboard Shortcut: Ctrl+Alt+N to Run Code
+        editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyMod.Alt | monaco.KeyCode.KeyN, runCode);
     });
 };
 

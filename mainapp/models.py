@@ -44,12 +44,14 @@ class OurUser(AbstractUser):
     email = models.EmailField(unique=True)
     name = models.CharField(max_length=100)
 
-    # profile_photo = models.ImageField(
-    #     upload_to='profile_photos/', 
-    #     default='profile_photos/default.png', 
-    #     blank=True, 
-    #     null=True
-    # )
+    profile_photo = models.ImageField(
+        upload_to='profile_photos/', 
+        default='profile_photos/default.png', 
+        blank=True, 
+        null=True
+    )
+
+    editor_theme = models.CharField(max_length=50, default='vs-dark')
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['name']

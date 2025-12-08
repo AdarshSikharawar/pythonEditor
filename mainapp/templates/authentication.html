@@ -6,17 +6,25 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Authentication</title>
-    <link rel="stylesheet" type="text/css" href="{% static 'styles/authentication.css' %}">
     <link href="{% static 'styles/bootstrap.min.css' %}" rel="stylesheet">
-    {% comment %}
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.8/css/bootstrap-grid.min.css"
-        integrity="sha512-dOjUSaLkr6G2pwQ7ry9juX+iXw5602zg1kg8yH+guR3uSEidGyCnOEQnGlr7xwu/8WE+pVm1ZNqaIs5ETTIJQg=="
-        crossorigin="anonymous" referrerpolicy="no-referrer" /> {% endcomment %}
+    <link href="{% static 'styles/theme.css' %}" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="{% static 'styles/authentication.css' %}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 
 <body>
+    <!-- Background Gradients -->
+    <div class="gradient-blob"
+        style="top: -10%; left: -10%; width: 500px; height: 500px; background: radial-gradient(circle, #bb86fc 0%, rgba(187, 134, 252, 0) 70%);">
+    </div>
+    <div class="gradient-blob"
+        style="top: 20%; right: -10%; width: 600px; height: 600px; background: radial-gradient(circle, #3700b3 0%, rgba(55, 0, 179, 0) 70%); animation-delay: -2s;">
+    </div>
+    <div class="gradient-blob"
+        style="bottom: -10%; left: 20%; width: 700px; height: 700px; background: radial-gradient(circle, rgba(3, 218, 198, 0.3) 0%, rgba(3, 218, 198, 0) 70%); animation-delay: -5s;">
+    </div>
 
-    <div class="content-wrapper">
+    <div class="content-wrapper glass-panel">
         <div class="image-section">
             <img src="{% static 'img/auth_image.webp' %}" alt="Security illustration">
         </div>
@@ -40,12 +48,14 @@
                     {% csrf_token %}
                     <div class="form-group">
                         <label for="email">Email</label>
-                        <input type="email" id="login-email" name="email" placeholder="you@example.com" required>
+                        <input type="email" id="login-email" name="email" placeholder="you@example.com" required
+                            class="form-control-glass">
                     </div>
 
                     <div class="form-group">
                         <label for="password">Password</label>
-                        <input type="password" id="login-password" name="password" placeholder="••••••••" required>
+                        <input type="password" id="login-password" name="password" placeholder="••••••••" required
+                            class="form-control-glass">
                     </div>
 
 
@@ -71,24 +81,27 @@
                 </div>
                 {% endif %}
                 <h1>Create an Account</h1>
-                
+
                 <p class="subheading">Get started with PyCodeFlow today.</p>
 
                 <form action="{% url 'auth' %}" method="POST">
                     {% csrf_token %}
                     <div class="form-group">
                         <label for="fullname">Full Name</label>
-                        <input type="text" id="fullname" name="name" placeholder="John Doe" required>
+                        <input type="text" id="fullname" name="name" placeholder="John Doe" required
+                            class="form-control-glass">
                     </div>
 
                     <div class="form-group">
                         <label for="email">Email</label>
-                        <input type="email" id="email" name="email" placeholder="you@example.com" required>
+                        <input type="email" id="email" name="email" placeholder="you@example.com" required
+                            class="form-control-glass">
                     </div>
 
                     <div class="form-group">
                         <label for="password">Password</label>
-                        <input type="password" id="password" name="password" placeholder="••••••••" required>
+                        <input type="password" id="password" name="password" placeholder="••••••••" required
+                            class="form-control-glass">
                     </div>
 
                     <div class="form-group">
@@ -98,7 +111,7 @@
                     <div class="form-group">
                         <label for="confirm-password">Confirm Password</label>
                         <input type="password" id="confirm-password" onkeyup="" name="confirm-password"
-                            placeholder="••••••••" required>
+                            placeholder="••••••••" required class="form-control-glass">
                     </div>
 
 
@@ -116,8 +129,7 @@
         Learn more about <a href="#">PyCodeFlow</a>
     </p>
 
-
-
+    <script src="{% static 'js/theme.js' %}"></script>
     <script src="{% static 'js/authentication.js' %}"></script>
 
 </body>

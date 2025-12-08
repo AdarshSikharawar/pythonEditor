@@ -7,6 +7,13 @@ function toggleForm(formId) {
     // Show selected form
     document.getElementById(formId).classList.add('active');
 
+    // Toggle compact mode for Signup form
+    const contentWrapper = document.querySelector('.content-wrapper');
+    if (formId === 'signupForm') {
+        contentWrapper.classList.add('compact-mode');
+    } else {
+        contentWrapper.classList.remove('compact-mode');
+    }
 }
 
 setTimeout(function () {
@@ -18,13 +25,13 @@ function validate() {
     let password = document.getElementById("password").value.trim();
     let confirmPassword = document.getElementById("confirm-password").value.trim();
     let message = document.getElementById("msg");
-    
+
     message.textContent = "";
 
     if (confirmPassword === "") {
         return;
     }
-    
+
     if (password === confirmPassword) {
         message.style.color = "green";
         message.textContent = "Password matched";

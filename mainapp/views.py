@@ -53,7 +53,7 @@ def auth_view(request):
 
             if user is not None:
                 login(request, user)
-                return redirect("gemini_chat")
+                return redirect("dashboard")
             else:
                 messages.error(request, "Invalid email or password")
             
@@ -69,9 +69,9 @@ def logout_view(request):
     return redirect('auth')
 
 @login_required
-def gemini_chat(request):
+def dashboard(request):
     user = request.user
-    files = request.user.files
+    files = UserFile.objects.filter(user=request.user)
     return render(request, "editor.html", {'user_data': user , 'user_files': files})
 
 
@@ -161,32 +161,35 @@ def update_file(request):
 @login_required
 def load_code_api(request):
     filename = request.GET.get('filename')
-    user_dir = get_user_code_dir(request.user)
     
     if not filename:
+        # Query database for user's files instead of filesystem
         try:
-            files = [f for f in os.listdir(user_dir) if os.path.isfile(os.path.join(user_dir, f))]
+            user_files = UserFile.objects.filter(user=request.user).values_list('file_name', flat=True)
+            files = list(user_files)
             return JsonResponse({'files': files})
         except Exception as e:
             return JsonResponse({'files': [], 'message': str(e)})
 
-    file_path = os.path.join(user_dir, filename)
+    # Load file content from filesystem
     try:
-        with open(file_path, 'r') as f:
-            content = f.read()
-        return JsonResponse({'content': content})
-    except FileNotFoundError:
-        return JsonResponse({'content': None, 'message': 'File not found.'})
+        user_file = UserFile.objects.get(user=request.user, file_name=filename)
+        file_path = user_file.file_path
+        
+        if os.path.exists(file_path):
+            with open(file_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            return JsonResponse({'content': content})
+        else:
+            return JsonResponse({'content': None, 'message': 'File not found on disk.'})
+    except UserFile.DoesNotExist:
+        return JsonResponse({'content': None, 'message': 'File not found in database.'})
     except Exception as e:
         return JsonResponse({'content': None, 'message': str(e)}, status=500)
 
 
 @csrf_exempt
 @login_required
-
-
-
-
 def delete_file(request, file_id):
     user_file = get_object_or_404(UserFile, id= file_id)
     if user_file.user != request.user:
@@ -197,6 +200,38 @@ def delete_file(request, file_id):
         # messages.success(request, f"फ़ाइल '{user_file.file_name}")
 
     return redirect('profile')
+
+
+@csrf_exempt
+@login_required
+def delete_file_api(request):
+    """Delete file from editor - accepts filename via POST"""
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            filename = data.get("filename")
+            
+            if not filename:
+                return JsonResponse({"status": "error", "message": "Filename required"}, status=400)
+            
+            # Find and delete the file
+            user_file = UserFile.objects.get(user=request.user, file_name=filename)
+            
+            # Delete physical file if it exists
+            if os.path.exists(user_file.file_path):
+                os.remove(user_file.file_path)
+            
+            # Delete database record
+            user_file.delete()
+            
+            return JsonResponse({"status": "success", "message": f"File {filename} deleted"})
+            
+        except UserFile.DoesNotExist:
+            return JsonResponse({"status": "error", "message": "File not found"}, status=404)
+        except Exception as e:
+            return JsonResponse({"status": "error", "message": str(e)}, status=500)
+    
+    return JsonResponse({"status": "error", "message": "Invalid request method"}, status=405)
 
 
 
@@ -226,7 +261,7 @@ def download_file(request, file_id):
 
 
 
-def gemini_chat(request):
+def chat_api(request):
     # This part handles the form submission via JavaScript (AJAX)
     if request.method == "POST":
         try:
@@ -259,9 +294,7 @@ def gemini_chat(request):
             print(f"API Error: {e}")
             return JsonResponse({'error': 'An error occurred with the AI model.'}, status=500)
 
-    # This part loads the initial page with the chat popup
-    context = {}
-    return render(request, "editor.html", context)
+    return JsonResponse({'error': 'Method not allowed'}, status=405)
 
 
 
@@ -270,3 +303,39 @@ def profilepage(request):
     files = UserFile.objects.filter(user=request.user)
     return render(request, 'profile.html', {'files': files})
 
+@login_required
+def update_profile(request):
+    if request.method == "POST":
+        user = request.user
+        name = request.POST.get('name')
+        email = request.POST.get('email')
+        profile_photo = request.FILES.get('profile_photo')
+
+        if name:
+            user.name = name
+        if email:
+            # Simple check if email is taken by another user
+            if OurUser.objects.filter(email=email).exclude(id=user.id).exists():
+                messages.error(request, "This email is already in use.")
+                return redirect('profile')
+            user.email = email
+        if profile_photo:
+            user.profile_photo = profile_photo
+        
+        user.save()
+        messages.success(request, "Profile updated successfully!")
+        return redirect('profile')
+    
+    return redirect('profile')
+
+@csrf_exempt
+@login_required
+def update_theme(request):
+    if request.method == "POST":
+        data = json.loads(request.body)
+        theme = data.get("theme")
+        if theme:
+            request.user.editor_theme = theme
+            request.user.save()
+            return JsonResponse({"status": "success", "theme": theme})
+    return JsonResponse({"status": "error"}, status=400)
