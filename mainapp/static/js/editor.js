@@ -247,10 +247,32 @@ const runCode = async () => {
         pyodide.setStdout({ batched: (s) => addToOutput(s, 'stdout') });
         pyodide.setStderr({ batched: (s) => addToOutput(s, 'stderr') });
 
+        pyodide.setStdin({
+            async batched(promptText) {
+                return prompt(promptText); // browser popup se input
+            }
+        });
+
+        // await pyodide.runPythonAsync(editor.getValue());
+        // addToOutput('\n✅ Execution Finished', 'success');
+
+        // 1. Pehle input override inject karo
+
+        await pyodide.runPythonAsync(`
+from js import prompt as __prompt_js
+
+def input(text=""):
+    return __prompt_js(text)
+`);
+
+        // 2. Ab user ka code run karo
         await pyodide.runPythonAsync(editor.getValue());
+
+        // 3. Output show
         addToOutput('\n✅ Execution Finished', 'success');
+
     } catch (err) {
-        addToOutput(`\n❌ Error:\n${err.toString()}`, 'stderr');
+        addToOutput(`\n Error:\n${err.toString()}`, 'stderr');
     }
 };
 
