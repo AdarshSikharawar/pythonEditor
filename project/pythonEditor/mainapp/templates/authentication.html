@@ -8,11 +8,13 @@
     <title>Authentication</title>
     <link href="{% static 'styles/bootstrap.min.css' %}" rel="stylesheet">
     <link href="{% static 'styles/theme.css' %}" rel="stylesheet">
+    <link href="{% static 'styles/toast.css' %}" rel="stylesheet">
     <link rel="stylesheet" type="text/css" href="{% static 'styles/authentication.css' %}">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 
 <body>
+    <div id="toast-container"></div>
     <!-- Background Gradients -->
     <div class="gradient-blob"
         style="top: -10%; left: -10%; width: 500px; height: 500px; background: radial-gradient(circle, #bb86fc 0%, rgba(187, 134, 252, 0) 70%);">
@@ -34,15 +36,7 @@
 
                 <h1>Welcome Back!</h1>
                 <p class="subheading">Sign in to continue to PyCodeFlow.</p>
-                {% if messages %}
-                <div>
-                    {% for message in messages %}
-                    <div class="message {{message.tags}}">
-                        {{ message }}
-                    </div>
-                    {% endfor %}
-                </div>
-                {% endif %}
+
 
                 <form action="{% url 'auth' %}" method="POST">
                     {% csrf_token %}
@@ -71,20 +65,12 @@
         </div>
         <div id="signupForm" class="form-section">
             <div class="login-box">
-                {% if messages %}
-                <div>
-                    {% for message in messages %}
-                    <div class="message {{message.tags}}">
-                        {{ message }}
-                    </div>
-                    {% endfor %}
-                </div>
-                {% endif %}
+
                 <h1>Create an Account</h1>
 
                 <p class="subheading">Get started with PyCodeFlow today.</p>
 
-                <form action="{% url 'auth' %}" method="POST">
+                <form action="{% url 'auth' %}" method="POST" onsubmit="return validateForm()">
                     {% csrf_token %}
                     <div class="form-group">
                         <label for="fullname">Full Name</label>
@@ -110,7 +96,7 @@
 
                     <div class="form-group">
                         <label for="confirm-password">Confirm Password</label>
-                        <input type="password" id="confirm-password" onkeyup="" name="confirm-password"
+                        <input type="password" id="confirm-password" onkeyup="validate()" name="confirm-password"
                             placeholder="••••••••" required class="form-control-glass">
                     </div>
 
@@ -130,7 +116,38 @@
     </p>
 
     <script src="{% static 'js/theme.js' %}"></script>
+    <script src="{% static 'js/toast.js' %}"></script>
     <script src="{% static 'js/authentication.js' %}"></script>
+
+    <!-- Hidden container for Django messages to avoid IDE errors in JS -->
+    <div id="django-messages-container" style="display: none;">
+        {% if messages %}
+        {% for message in messages %}
+        <div data-tags="{{ message.tags }}" data-message="{{ message }}"></div>
+        {% endfor %}
+        {% endif %}
+    </div>
+
+    <script>
+        // Check for Django messages and show them as toasts
+        document.addEventListener('DOMContentLoaded', () => {
+            const messageContainer = document.getElementById('django-messages-container');
+            if (messageContainer) {
+                const messageElements = messageContainer.querySelectorAll('div');
+                messageElements.forEach(el => {
+                    const tags = el.getAttribute('data-tags') || '';
+                    const text = el.getAttribute('data-message') || '';
+
+                    let type = 'info';
+                    if (tags.includes('success')) type = 'success';
+                    else if (tags.includes('error') || tags.includes('danger')) type = 'error';
+                    else if (tags.includes('warning')) type = 'warning';
+
+                    if (text) showToast(type, text);
+                });
+            }
+        });
+    </script>
 
 </body>
 

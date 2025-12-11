@@ -21,9 +21,6 @@ def index(request):
 
 
 
-
-
-
 def auth_view(request):
     # form_to_show = request.GET.get('form', 'login')
     if request.method == "POST":
@@ -34,8 +31,11 @@ def auth_view(request):
             name = request.POST.get('name')
             email = request.POST.get('email')
             password = request.POST.get('password')
+            confirm_password = request.POST.get('confirm-password')
             
-            if OurUser.objects.filter(email=email).exists():
+            if password != confirm_password:
+                messages.error(request, "Passwords do not match")
+            elif OurUser.objects.filter(email=email).exists():
                 messages.error(request, "Email already registered")
 
             else:
@@ -197,7 +197,7 @@ def delete_file(request, file_id):
     
     if request.method == 'POST':
         user_file.delete()
-        # messages.success(request, f"फ़ाइल '{user_file.file_name}")
+        messages.success(request, f"File '{user_file.file_name}' deleted successfully.")
 
     return redirect('profile')
 

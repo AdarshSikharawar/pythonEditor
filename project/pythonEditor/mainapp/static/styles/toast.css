@@ -1,0 +1,140 @@
+/* Toast Notification System */
+:root {
+    --toast-success-bg: #d1e7dd;
+    --toast-success-text: #0f5132;
+    --toast-info-bg: #cff4fc;
+    --toast-info-text: #055160;
+    --toast-warning-bg: #fff3cd;
+    --toast-warning-text: #664d03;
+    --toast-error-bg: #f8d7da;
+    --toast-error-text: #842029;
+    --toast-width: 380px;
+    --toast-spacing: 12px;
+}
+
+#toast-container {
+    position: fixed;
+    top: 70px;
+    /* Below navbar */
+    right: 20px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: var(--toast-spacing);
+}
+
+.toast-notification {
+    width: var(--toast-width);
+    padding: 12px 16px;
+    border-radius: 8px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    opacity: 0;
+    transform: translateX(100%);
+    animation: slideInLeft 0.3s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+    pointer-events: auto;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 0;
+}
+
+.toast-notification.hiding {
+    animation: fadeOutRight 0.4s cubic-bezier(0.5, 0, 0.75, 0) forwards;
+}
+
+/* Types */
+.toast-success {
+    background-color: var(--toast-success-bg);
+    color: var(--toast-success-text);
+}
+
+.toast-info {
+    background-color: var(--toast-info-bg);
+    color: var(--toast-info-text);
+}
+
+.toast-warning {
+    background-color: var(--toast-warning-bg);
+    color: var(--toast-warning-text);
+}
+
+.toast-error {
+    background-color: var(--toast-error-bg);
+    color: var(--toast-error-text);
+}
+
+/* Content */
+.toast-content {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    width: 100%;
+}
+
+.toast-icon {
+    font-size: 1.25rem;
+    flex-shrink: 0;
+    margin-top: -2px;
+}
+
+.toast-body {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.toast-title {
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.toast-message {
+    font-size: 0.85rem;
+    opacity: 0.9;
+    line-height: 1.4;
+}
+
+.toast-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.25rem;
+    line-height: 1;
+    padding: 0;
+    margin-left: 8px;
+    opacity: 0.6;
+    color: inherit;
+    transition: opacity 0.2s;
+}
+
+.toast-close:hover {
+    opacity: 1;
+}
+
+/* Animations */
+@keyframes slideInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes fadeOutRight {
+    from {
+        opacity: 1;
+        transform: translateX(0);
+    }
+
+    to {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+}

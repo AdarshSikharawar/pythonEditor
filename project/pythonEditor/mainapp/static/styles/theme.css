@@ -204,3 +204,47 @@ h6 {
 .form-control-glass::placeholder {
     color: var(--text-muted);
 }
+
+/* File List Customization */
+#file-list .list-group-item {
+    background-color: transparent;
+    border: 1px solid transparent;
+    /* Placeholder for border transition */
+    color: var(--text-light);
+    transition: all 0.3s ease;
+    margin-bottom: 5px;
+    /* Spacing for animation */
+}
+
+/* Remove default Bootstrap hover background */
+#file-list .list-group-item-action:hover {
+    background-color: transparent !important;
+    color: var(--text-light);
+    z-index: 2;
+    /* Ensure it stays on top during transform */
+}
+
+/* Inactive File Hover Effect */
+#file-list .list-group-item:not(.active):hover {
+    border: 1px solid var(--primary-purple);
+    /* removed translateY transform */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+/* Animate File Name Text on Hover */
+#file-list .list-group-item span:first-child {
+    transition: transform 0.3s ease;
+    display: inline-block;
+}
+
+#file-list .list-group-item:hover span:first-child {
+    transform: translateX(5px);
+}
+
+/* Active File Styling (Ensure visibility) */
+#file-list .list-group-item.active {
+    background-color: rgba(187, 134, 252, 0.15) !important;
+    border-color: var(--primary-purple) !important;
+    color: var(--primary-purple) !important;
+    z-index: 1;
+}

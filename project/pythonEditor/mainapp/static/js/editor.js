@@ -82,7 +82,7 @@ const saveFileContent = async (filename, content) => {
         }
     } catch (error) {
         setStatusText('Network Error!', 'error');
-        addToOutput(`Network error: ${error}`, 'stderr');
+        showToast('error', 'Network error while saving!');
         return false;
     }
 };
@@ -168,12 +168,12 @@ const deleteFile = async (filename) => {
 
             // Re-render file list
             renderFileList();
-            addToOutput(`File "${filename}" deleted successfully.\n`, 'success');
+            showToast('success', `File "${filename}" deleted.`);
         } else {
-            addToOutput(`Error deleting file: ${result.message}\n`, 'stderr');
+            showToast('error', `Error deleting file: ${result.message}`);
         }
     } catch (error) {
-        addToOutput(`Network error: ${error}\n`, 'stderr');
+        showToast('error', 'Network error while deleting!');
     }
 };
 
@@ -253,16 +253,22 @@ const runCode = async () => {
             }
         });
 
-        // await pyodide.runPythonAsync(editor.getValue());
-        // addToOutput('\n✅ Execution Finished', 'success');
-
         // 1. Pehle input override inject karo
 
         await pyodide.runPythonAsync(`
 from js import prompt as __prompt_js
 
+class MagicInput(str):
+    def __int__(self):
+        return 0
+    def __float__(self):
+        return 0.0
+
 def input(text=""):
-    return __prompt_js(text)
+    val = __prompt_js(text)
+    if val is None or val == "":
+        return MagicInput("NULL")
+    return val
 `);
 
         // 2. Ab user ka code run karo
@@ -280,12 +286,12 @@ def input(text=""):
 const createNewFile = async () => {
     let filename = newFilenameInput.value.trim();
     if (!filename) {
-        alert('Please enter a filename.');
+        showToast('warning', 'Please enter a filename.');
         return;
     }
     if (!filename.endsWith('.py')) filename += '.py';
     if (userFiles.includes(filename)) {
-        alert('File already exists!');
+        showToast('warning', 'File already exists!');
         return;
     }
 
@@ -297,6 +303,7 @@ const createNewFile = async () => {
         editor.setValue('# Start your new Python code here!\n');
         newFileForm.reset();
         newFileDialog.close();
+        showToast('success', `File "${filename}" created successfully.`);
     }
 };
 
@@ -480,7 +487,11 @@ window.changeTheme = (themeName) => {
         },
         body: JSON.stringify({ theme: themeName })
     })
-        .catch(err => console.error("Error saving theme:", err));
+        .then()
+        .catch(err => {
+            console.error("Error saving theme:", err);
+            showToast('error', 'Failed to save theme preference');
+        });
 };
 
 
@@ -500,6 +511,7 @@ const initializeApp = () => {
             const content = currentFile === 'main.py' ? defaultCode : '# Start your new Python code here!\n';
             editor.setValue(content);
             saveFileContent(currentFile, content);
+            showToast('success', 'File reset to default');
         }
     });
     saveBtn.addEventListener('click', () => saveFileContent(currentFile, editor.getValue()));
@@ -511,6 +523,7 @@ const initializeApp = () => {
         a.download = currentFile;
         a.click();
         URL.revokeObjectURL(a.href);
+        showToast('success', 'Downloading ' + currentFile);
     });
 
     fileList.addEventListener('click', (e) => {

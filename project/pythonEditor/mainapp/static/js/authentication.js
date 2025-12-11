@@ -33,10 +33,23 @@ function validate() {
     }
 
     if (password === confirmPassword) {
-        message.style.color = "green";
+        message.classList.remove("text-danger");
+        message.classList.add("text-success");
         message.textContent = "Password matched";
     } else {
-        message.style.color = "red";
-        message.textContent = "Password and confirm password must be same";
+        message.classList.remove("text-success");
+        message.classList.add("text-danger");
+        message.textContent = "Both passwords must be same";
     }
+}
+
+function validateForm() {
+    let password = document.getElementById("password").value.trim();
+    let confirmPassword = document.getElementById("confirm-password").value.trim();
+
+    if (password !== confirmPassword) {
+        showToast('error', 'Passwords do not match!');
+        return false;
+    }
+    return true;
 }
