@@ -1,12 +1,12 @@
 @import url('theme.css');
 
 /* :root { */
-    /* Mapped from theme.css */
-    /* --primary-color: #6A62D2; */
-    /* --text-color-dark: #333; */
-    /* --text-color-light: #6c757d; */
-    /* --border-color: #ced4da; */
-    /* --background-color: #f8f9fa; */
+/* Mapped from theme.css */
+/* --primary-color: #6A62D2; */
+/* --text-color-dark: #333; */
+/* --text-color-light: #6c757d; */
+/* --border-color: #ced4da; */
+/* --background-color: #f8f9fa; */
 /* } */
 
 * {
@@ -160,7 +160,7 @@ body {
 }
 
 .form-group input {
-    width: 90%;
+    width: 100%;
     padding: 0.75rem;
     /* border: 1px solid var(--border-color); */
     border-radius: 6px;
@@ -185,7 +185,7 @@ body {
 
 /* --- Login Button --- */
 .login-btn {
-    width: 90%;
+    width: 100%;
     padding: 0.85rem;
     background-color: var(--primary-purple);
     color: #fff;
@@ -258,22 +258,19 @@ body {
 @media (max-width: 768px) {
     .content-wrapper {
         flex-direction: column;
-        /* Stack image and form vertically */
         background-color: transparent;
         box-shadow: none;
         padding: 0;
         border: none;
         backdrop-filter: none;
+        width: 100%;
+        max-width: 400px;
+        /* Constrain width on mobile */
     }
 
     .image-section {
-        margin-bottom: 2rem;
-        /* Add space between image and form */
-    }
-
-    .image-section img {
-        max-width: 300px;
-        /* Control image size on mobile */
+        display: none;
+        /* Hide image on mobile for cleaner focus */
     }
 
     .form-section {
@@ -285,19 +282,24 @@ body {
     }
 
     .login-box {
-        /* Re-apply the box style to the form only on mobile */
-        /* background-color: #fff; */
-        padding: 2rem;
-        /* border-radius: 8px; */
-
         background: var(--glass-bg);
         border-radius: 16px;
         box-shadow: var(--glass-shadow);
         backdrop-filter: blur(var(--glass-blur));
         border: 1px solid var(--glass-border);
+        padding: 2rem;
+        width: 100%;
+    }
+
+    .form-group input,
+    .login-btn {
+        width: 100%;
+        /* Fill the card on mobile */
     }
 
     body {
         padding: 1rem;
+        justify-content: center;
+        /* Ensure vertical centering */
     }
 }

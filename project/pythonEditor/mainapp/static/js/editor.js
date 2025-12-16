@@ -23,8 +23,23 @@ const confirmNewFileBtn = document.getElementById('confirm-new-file-btn');
 const resizer = document.getElementById('resizer');
 const outputConsole = document.getElementById('output-console');
 
+// Mobile UI Elements
+const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+const mobileMenuOverlay = document.getElementById('mobile-menu-overlay');
+const closeMenuBtn = document.getElementById('close-menu-btn');
+const mobileFileList = document.getElementById('mobile-file-list');
+const closeOutputBtn = document.getElementById('close-output-btn');
+
+// Mobile Action Buttons
+const mobileClearBtn = document.getElementById('mobile-clear-btn');
+const mobileResetBtn = document.getElementById('mobile-reset-btn');
+const mobileSaveBtn = document.getElementById('mobile-save-btn');
+const mobileDownloadBtn = document.getElementById('mobile-download-btn');
+
 const defaultCode = `# This part calculates mean and standard deviation
 import numpy as np
+
+print("Welcome to PyGenix, An online Python code Editor")
 data = [10, 20, 15, 25, 30, 12, 18, 22]
 print("\\n--- Data Analysis ---")
 print(f"Data points: {data}")
@@ -55,15 +70,27 @@ const addToOutput = (message, type = 'stdout') => {
 const setupAutoSave = (editor) => {
     editor.onDidChangeModelContent(() => {
         clearTimeout(autoSaveTimeout);
-        setStatusText('Unsaved changes...');
+        if (!window.isGuest) {
+            setStatusText('Unsaved changes...');
+        }
         autoSaveTimeout = setTimeout(() => {
             saveFileContent(currentFile, editor.getValue());
         }, AUTO_SAVE_DELAY);
     });
 };
 
+
 const saveFileContent = async (filename, content) => {
-    setStatusText(`Saving ${filename}...`);
+    if (!window.isGuest) {
+        setStatusText(`Saving ${filename}...`);
+    }
+
+    if (window.isGuest) {
+        // Guest: Explicitly status that saving is disabled
+        setStatusText('Not Saved (Guest Mode)', 'warning');
+        return true;
+    }
+
     try {
         const response = await fetch('/api/save_code/', {
             method: 'POST',
@@ -81,20 +108,25 @@ const saveFileContent = async (filename, content) => {
             return false;
         }
     } catch (error) {
-        setStatusText('Network Error!', 'error');
-        showToast('error', 'Network error while saving!');
+        if (!window.isGuest) {
+            setStatusText('Network Error!', 'error');
+            showToast('error', 'Network error while saving!');
+        }
         return false;
     }
 };
 
 const renderFileList = () => {
+    // Clear both lists
     fileList.innerHTML = '';
+    if (mobileFileList) mobileFileList.innerHTML = '';
+
     userFiles.forEach(filename => {
+        // --- Desktop List Item ---
         const li = document.createElement('li');
         li.className = `list-group-item list-group-item-action d-flex justify-content-between align-items-center ${filename === currentFile ? 'active' : ''}`;
         li.dataset.filename = filename;
         li.style.cursor = 'pointer';
-        // Removed hardcoded background color to allow CSS active state to work
 
         const fileNameSpan = document.createElement('span');
         fileNameSpan.innerHTML = `<i class="bi bi-filetype-py"></i> ${filename}`;
@@ -106,11 +138,7 @@ const renderFileList = () => {
         actionContainer.style.alignItems = 'center';
         actionContainer.style.gap = '8px';
 
-        // Add separator border
-
-
         if (filename === 'main.py') {
-
             const separator = document.createElement('div');
             separator.style.width = '2px';
             separator.style.height = '20px';
@@ -139,8 +167,20 @@ const renderFileList = () => {
 
         li.appendChild(actionContainer);
         fileList.appendChild(li);
+
+        // --- Mobile List Item (Clone logic for simplicity) ---
+        if (mobileFileList) {
+            const mobileLi = li.cloneNode(true);
+            // Re-attach event listeners? No, cloneNode doesn't clone listeners.
+            // We'll rely on delegation on the parent list.
+            mobileLi.className = `list-group-item list-group-item-action d-flex justify-content-between align-items-center ${filename === currentFile ? 'active' : ''}`;
+
+            // Fix delete icon listener in valid delegation
+            mobileFileList.appendChild(mobileLi);
+        }
     });
 };
+
 
 const deleteFile = async (filename) => {
     if (!confirm(`Are you sure you want to delete "${filename}"?`)) {
@@ -179,6 +219,18 @@ const deleteFile = async (filename) => {
 
 const loadFileContent = async (filename) => {
     setStatusText(`Loading ${filename}...`);
+
+    if (window.isGuest) {
+        // Guest Load Logic: Always default (Ephemeral)
+        if (filename === 'main.py') {
+            editor.setValue(defaultCode);
+        } else {
+            editor.setValue('# Start your new Python code here!\n');
+        }
+        setStatusText('Ready', 'success');
+        return;
+    }
+
     try {
         const response = await fetch(`/api/load_code/?filename=${filename}`);
         const result = await response.json();
@@ -200,6 +252,14 @@ const loadFileContent = async (filename) => {
 };
 
 const loadInitialFiles = async () => {
+    if (window.isGuest) {
+        // Guest only has main.py initially (virtual)
+        userFiles = ['main.py'];
+        renderFileList();
+        await loadFileContent(currentFile);
+        return;
+    }
+
     try {
         const response = await fetch('/api/load_code/');
         const result = await response.json();
@@ -243,6 +303,11 @@ const runCode = async () => {
     outputContent.innerHTML = '';
     addToOutput(`▶️ Running ${currentFile}...\n`, 'success');
 
+    // Show Mobile Output Overlay
+    if (window.innerWidth < 768) {
+        outputConsole.classList.add('active');
+    }
+
     try {
         pyodide.setStdout({ batched: (s) => addToOutput(s, 'stdout') });
         pyodide.setStderr({ batched: (s) => addToOutput(s, 'stderr') });
@@ -285,6 +350,13 @@ def input(text=""):
 // ✅ Dialog-based File Creation
 const createNewFile = async () => {
     let filename = newFilenameInput.value.trim();
+
+    if (window.isGuest) {
+        showToast('warning', 'Login required to create files');
+        newFileDialog.close(); // Close dialog for cleanliness
+        return;
+    }
+
     if (!filename) {
         showToast('warning', 'Please enter a filename.');
         return;
@@ -496,10 +568,83 @@ window.changeTheme = (themeName) => {
 
 
 
+const setupMobileUI = () => {
+    if (mobileMenuBtn) {
+        mobileMenuBtn.addEventListener('click', () => {
+            mobileMenuOverlay.classList.add('active');
+        });
+    }
+
+    if (closeMenuBtn) {
+        closeMenuBtn.addEventListener('click', () => {
+            console.log('Close menu clicked');
+            mobileMenuOverlay.classList.remove('active');
+        });
+    }
+
+    if (closeOutputBtn) {
+        closeOutputBtn.addEventListener('click', () => {
+            outputConsole.classList.remove('active');
+        });
+    }
+
+    // New File Button
+    const mobileCreateFileBtn = document.getElementById('mobile-create-file-btn');
+    if (mobileCreateFileBtn) {
+        mobileCreateFileBtn.addEventListener('click', () => {
+            newFileDialog.showModal();
+            mobileMenuOverlay.classList.remove('active'); // Close menu to show dialog
+        });
+    }
+
+    // Mobile File List Delegation
+    if (mobileFileList) {
+        mobileFileList.addEventListener('click', (e) => {
+            const fileItem = e.target.closest('li');
+            if (!fileItem) return;
+
+            // Check for delete icon
+            if (e.target.classList.contains('delete-icon')) {
+                deleteFile(e.target.dataset.filename);
+                return;
+            }
+
+            // File selection
+            const filename = fileItem.dataset.filename;
+            if (filename && filename !== currentFile) {
+                currentFile = filename;
+                loadFileContent(currentFile);
+                renderFileList();
+                // Optionally close menu
+                mobileMenuOverlay.classList.remove('active');
+            }
+        });
+    }
+
+    // Connect Mobile Action Buttons
+    if (mobileClearBtn) mobileClearBtn.addEventListener('click', () => {
+        clearBtn.click();
+        mobileMenuOverlay.classList.remove('active');
+    });
+    if (mobileResetBtn) mobileResetBtn.addEventListener('click', () => {
+        resetBtn.click();
+        mobileMenuOverlay.classList.remove('active');
+    });
+    if (mobileSaveBtn) mobileSaveBtn.addEventListener('click', () => {
+        saveBtn.click();
+        mobileMenuOverlay.classList.remove('active');
+    });
+    if (mobileDownloadBtn) mobileDownloadBtn.addEventListener('click', () => {
+        downloadBtn.click();
+        mobileMenuOverlay.classList.remove('active');
+    });
+};
+
 // ✅ INITIALIZE APP
 const initializeApp = () => {
     setupResizer();
     setupSidebarResizer();
+    setupMobileUI();
 
     runBtn.addEventListener('click', runCode);
     clearBtn.addEventListener('click', () => {
@@ -514,7 +659,14 @@ const initializeApp = () => {
             showToast('success', 'File reset to default');
         }
     });
-    saveBtn.addEventListener('click', () => saveFileContent(currentFile, editor.getValue()));
+    saveBtn.addEventListener('click', () => {
+        if (window.isGuest) {
+            showToast('warning', 'Please Login to save your code permanently.');
+            saveFileContent(currentFile, editor.getValue()); // Silent save
+            return;
+        }
+        saveFileContent(currentFile, editor.getValue());
+    });
 
     downloadBtn.addEventListener('click', () => {
         const blob = new Blob([editor.getValue()], { type: 'text/plain' });

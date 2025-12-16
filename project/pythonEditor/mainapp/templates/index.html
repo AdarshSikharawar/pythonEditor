@@ -5,11 +5,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PyCodeFlow - Run Python in Your Browser</title>
+    <title>PyGenix - Run Python in Your Browser</title>
 
     <link href="{% static 'styles/bootstrap.min.css' %}" rel="stylesheet">
     <link href="{% static 'styles/theme.css' %}" rel="stylesheet">
-    <link rel="icon" type="image/png" href="{% static 'img/logo.png' %}">
+    <link rel="icon" type="image/png" href="{% static 'img/icon_logo.png' %}">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -40,13 +40,14 @@
         <nav class="navbar navbar-expand-md py-3 glass-navbar">
             <div class="container">
                 <a href="#" class="navbar-brand d-flex align-items-center fw-bold fs-4">
-                    <svg class="h-8 w-8 text-primary-purple me-2" style="width:2rem; height:2rem;"
+                    {% comment %} <svg class="h-8 w-8 text-primary-purple me-2" style="width:2rem; height:2rem;"
                         xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
                         stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round"
                             d="M6.75 7.5l3 2.25-3 2.25m4.5 0h3m-9 8.25h13.5A2.25 2.25 0 0021 18V6a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 6v12a2.25 2.25 0 002.25 2.25z" />
                     </svg>
-                    <span>PyCodeFlow</span>
+                    <span>PyCodeFlow</span> {% endcomment %}
+                    <img src="{% static 'img/project_logo.png' %}" style="height: 50px" alt="logo" />
                 </a>
 
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
@@ -92,14 +93,16 @@
         <section class="container py-5 mt-2 mb-0 position-relative">
             <div class="row align-items-center g-5">
                 <div class="col-md-6 text-center text-md-start">
-                    <h1 class="display-3 fw-bolder mb-3">PyCodeFlow</h1>
+                    <h1 class="display-3 fw-bolder mb-3">PyGenix</h1>
                     <p class="lead text-adaptive mb-4" style="opacity: 0.8;">Run Python Code in Your Browser. Seamless,
                         Powerful,
                         Collaborative.</p>
-                    <button class="btn btn-primary-glass btn-lg fw-semibold px-5 py-3 rounded-pill"
-                        onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                    <a href="{% url 'dashboard' %}"
+                        class="btn btn-primary-glass btn-lg fw-semibold px-5 py-3 rounded-pill"
+                        onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'"
+                        style="text-decoration: none;">
                         Start Coding Now
-                    </button>
+                    </a>
                 </div>
 
                 <div class="col-md-6">
@@ -134,7 +137,7 @@
 
                     <div class="col-sm-6 col-lg-4">
                         <div class="glass-card p-4 h-100 text-left">
-                            <div class="mb-3">
+                            <div class="mb-3 d-flex justify-content-between align-items-start">
                                 <svg class="w-8 h-8 text-primary-purple" style="width:2.5rem; height:2.5rem;"
                                     xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
                                     stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
@@ -144,6 +147,11 @@
                                     <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
                                     <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
                                 </svg>
+                                <div class="px-2 py-1 rounded-pill fw-bold d-flex align-items-center"
+                                    style="font-size: 0.65rem; background: rgba(25, 135, 84, 0.1); border: 1px solid var(--bs-success); color: var(--bs-success); box-shadow: 0 0 10px rgba(25, 135, 84, 0.2);">
+                                    Coming Soon <span class="ms-1 rounded-circle bg-success"
+                                        style="width: 6px; height: 6px; box-shadow: 0 0 6px var(--bs-success);"></span>
+                                </div>
                             </div>
                             <h3 class="h5 fw-bold mb-2">Collaborative Coding</h3>
                             <p class="small">Share your projects and collaborate with teammates in
@@ -201,13 +209,18 @@
 
                     <div class="col-sm-6 col-lg-4">
                         <div class="glass-card p-4 h-100 text-left">
-                            <div class="mb-3">
+                            <div class="mb-3 d-flex justify-content-between align-items-start">
                                 <svg class="w-8 h-8 text-primary-purple" style="width:2.5rem; height:2.5rem;"
                                     xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                                     stroke-width="1.5" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round"
                                         d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.186 2.25 2.25 0 00-3.933 2.186z" />
                                 </svg>
+                                <div class="px-2 py-1 rounded-pill fw-bold d-flex align-items-center"
+                                    style="font-size: 0.65rem; background: rgba(25, 135, 84, 0.1); border: 1px solid var(--bs-success); color: var(--bs-success); box-shadow: 0 0 10px rgba(25, 135, 84, 0.2);">
+                                    Coming Soon <span class="ms-1 rounded-circle bg-success"
+                                        style="width: 6px; height: 6px; box-shadow: 0 0 6px var(--bs-success);"></span>
+                                </div>
                             </div>
                             <h3 class="h5 fw-bold mb-2">Easy Sharing</h3>
                             <p class="small">Quickly share your code snippets or entire projects with
@@ -223,7 +236,7 @@
         <div class="container py-4">
             <div class="d-flex flex-column flex-md-row align-items-center justify-content-between">
                 <div class="mb-3 mb-md-0 text-adaptive">
-                    Copyright © 2025 PyCodeFlow. All Rights Reserved.
+                    Copyright © 2025 PyGenix. All Rights Reserved.
                 </div>
                 <div class="d-flex" style="gap: 1.5rem;">
                     <a href="#" class="text-adaptive"><svg style="width:1.5rem; height:1.5rem;" fill="currentColor"

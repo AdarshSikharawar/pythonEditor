@@ -68,11 +68,25 @@ def logout_view(request):
     messages.success(request, "logged out successfully.")
     return redirect('auth')
 
-@login_required
 def dashboard(request):
-    user = request.user
-    files = UserFile.objects.filter(user=request.user)
-    return render(request, "editor.html", {'user_data': user , 'user_files': files})
+    if request.user.is_authenticated:
+        user = request.user
+        files = UserFile.objects.filter(user=request.user)
+        return render(request, "editor.html", {'user_data': user , 'user_files': files, 'is_guest': False})
+    else:
+        # Guest User Logic
+        guest_user = {
+            'name': 'Guest',
+            'email': 'guest@example.com',
+            'profile_photo': {'url': ''}, # Will handle default G in template
+            'editor_theme': 'vs-dark' # Default theme, will be overridden by client-side if needed
+        }
+        # Guest only gets main.py in memory mostly, but passing it for template loop if needed
+        return render(request, "editor.html", {
+            'user_data': guest_user, 
+            'user_files': [], # Empty initially, JS handles default main.py creation for guest
+            'is_guest': True
+        })
 
 
 def get_user_code_dir(user):

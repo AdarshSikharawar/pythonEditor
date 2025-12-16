@@ -10,10 +10,11 @@
     <link href="{% static 'styles/theme.css' %}" rel="stylesheet">
     <link href="{% static 'styles/toast.css' %}" rel="stylesheet">
     <link rel="stylesheet" type="text/css" href="{% static 'styles/authentication.css' %}">
+    <link rel="icon" type="image/png" href="{% static 'img/icon_logo.png' %}">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 
-<body>
+<body style="overflow-x: hidden;">
     <div id="toast-container"></div>
     <!-- Background Gradients -->
     <div class="gradient-blob"
@@ -35,7 +36,7 @@
             <div class="login-box">
 
                 <h1>Welcome Back!</h1>
-                <p class="subheading">Sign in to continue to PyCodeFlow.</p>
+                <p class="subheading">Sign in to continue to PyGenix.</p>
 
 
                 <form action="{% url 'auth' %}" method="POST">
@@ -68,7 +69,7 @@
 
                 <h1>Create an Account</h1>
 
-                <p class="subheading">Get started with PyCodeFlow today.</p>
+                <p class="subheading">Get started with PyGenix today.</p>
 
                 <form action="{% url 'auth' %}" method="POST" onsubmit="return validateForm()">
                     {% csrf_token %}
@@ -112,7 +113,7 @@
     </div>
 
     <p class="footer-link">
-        Learn more about <a href="#">PyCodeFlow</a>
+        Learn more about <a href="#">PyGenix</a>
     </p>
 
     <script src="{% static 'js/theme.js' %}"></script>

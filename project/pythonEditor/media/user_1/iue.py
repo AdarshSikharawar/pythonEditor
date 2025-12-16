@@ -1,3 +1,1 @@
 # Start your new Python code here!
-n = float(input("enter"))
-print(n)
