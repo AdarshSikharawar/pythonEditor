@@ -3,6 +3,8 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.conf import settings
+from django.utils import timezone
+from django.conf import settings
 
 # --- YEH MANAGER ADD KARNA ZAROORI THA ---
 class CustomUserManager(BaseUserManager):
@@ -77,3 +79,20 @@ class UserFile(models.Model):
 
     def size_in_kb(self):
         return round(self.file_size, 2)
+
+
+class OTPVerification(models.Model):
+    email = models.EmailField()
+    otp = models.CharField(max_length=6)
+    purpose = models.CharField(max_length=20, choices=[('login', 'Login'), ('signup', 'Signup')])
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    # Store temporary user data during signup
+    temp_data = models.JSONField(null=True, blank=True)
+
+    def is_valid(self):
+        # OTP is valid for 10 minutes
+        return (timezone.now() - self.created_at).total_seconds() < 600
+
+    def __str__(self):
+        return f"{self.email} - {self.otp} ({self.purpose})"

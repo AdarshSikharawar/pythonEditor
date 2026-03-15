@@ -5,6 +5,11 @@ let userFiles = ['main.py'];
 let autoSaveTimeout;
 const AUTO_SAVE_DELAY = 2000;
 
+// Collaboration State
+let collabSocket = null;
+let currentRoom = null;
+let isRemoteChange = false; // Prevent feedback loops
+
 // ✅ DOM ELEMENTS (Declared & Initialized Together)
 const editorContainer = document.getElementById('editor-container');
 const outputContent = document.getElementById('output-content');
@@ -57,6 +62,73 @@ const setStatusText = (text, type = 'info') => {
     if (type === 'success') pyodideStatus.classList.add('text-success');
 };
 
+// ✅ Collaboration Logic
+window.createCollabRoom = () => {
+    // Generate a simple random room ID
+    const roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
+    connectToRoom(roomId);
+};
+
+window.joinCollabRoom = () => {
+    const roomId = document.getElementById('join-room-input').value.trim().toUpperCase();
+    if (!roomId) {
+        showToast('warning', 'Please enter a valid room ID');
+        return;
+    }
+    connectToRoom(roomId);
+};
+
+const connectToRoom = (roomId) => {
+    if (collabSocket) {
+        collabSocket.close();
+    }
+    
+    currentRoom = roomId;
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    collabSocket = new WebSocket(`${protocol}//${window.location.host}/ws/editor/${roomId}/`);
+
+    collabSocket.onopen = () => {
+        showToast('success', `Joined collaboration room: ${roomId}`);
+        document.getElementById('collab-dialog').close();
+        document.getElementById('collab-status').style.display = 'inline-block';
+        document.getElementById('collab-room-id').innerText = roomId;
+    };
+
+    collabSocket.onmessage = (e) => {
+        const data = JSON.parse(e.data);
+        if (data.type === 'code_sync' && data.sender !== window.clientId && data.filename === currentFile) {
+            // Apply remote changes
+            isRemoteChange = true;
+            
+            // Save cursor state
+            const position = editor.getPosition();
+            
+            editor.setValue(data.content);
+            
+            // Restore cursor state
+            editor.setPosition(position);
+            
+            isRemoteChange = false;
+        }
+    };
+
+    collabSocket.onclose = () => {
+        showToast('error', 'Disconnected from collaboration room');
+        document.getElementById('collab-status').style.display = 'none';
+        collabSocket = null;
+        currentRoom = null;
+    };
+};
+
+window.leaveCollabRoom = () => {
+    if (collabSocket) {
+        collabSocket.close();
+        showToast('info', 'Left collaboration room');
+    }
+};
+
+window.clientId = Math.random().toString(36).substring(2, 15); // unique id for this session
+
 const addToOutput = (message, type = 'stdout') => {
     const span = document.createElement('span');
     span.textContent = message + '\n';
@@ -68,7 +140,18 @@ const addToOutput = (message, type = 'stdout') => {
 };
 
 const setupAutoSave = (editor) => {
-    editor.onDidChangeModelContent(() => {
+    editor.onDidChangeModelContent((e) => {
+        // Collaboration broadcast
+        if (collabSocket && collabSocket.readyState === WebSocket.OPEN && !isRemoteChange) {
+            collabSocket.send(JSON.stringify({
+                'type': 'code_change',
+                'filename': currentFile,
+                'content': editor.getValue(),
+                'sender': window.clientId
+            }));
+        }
+
+        // Auto Save Logic
         clearTimeout(autoSaveTimeout);
         if (!window.isGuest) {
             setStatusText('Unsaved changes...');

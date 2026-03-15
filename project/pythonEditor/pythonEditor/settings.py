@@ -33,6 +33,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
     'captcha',
     'django.contrib.admin',
     'django.contrib.auth',
@@ -40,9 +41,22 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+
+    'django.contrib.sites',
+
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    
+    # Add your social providers here
+    'allauth.socialaccount.providers.google',
+    'allauth.socialaccount.providers.github',
+
     'editor',
     'mainapp',
 ]
+
+SITE_ID = 1
 
 AUTH_USER_MODEL = 'mainapp.OurUser'
 
@@ -60,6 +74,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'allauth.account.middleware.AccountMiddleware',
 ]
 
 ROOT_URLCONF = 'pythonEditor.urls'
@@ -87,6 +103,13 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'pythonEditor.wsgi.application'
+ASGI_APPLICATION = 'pythonEditor.asgi.application'
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+    },
+}
 
 
 # Database
@@ -147,3 +170,25 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'mainapp.OurUser'
 LOGIN_URL = 'auth'
+
+# Allauth settings
+ACCOUNT_USER_MODEL_USERNAME_FIELD = None
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_USERNAME_REQUIRED = False
+ACCOUNT_AUTHENTICATION_METHOD = 'email' # Agar aap email se primary login chahte hain
+ACCOUNT_EMAIL_VERIFICATION = 'none' 
+
+SOCIALACCOUNT_ADAPTER = 'mainapp.adapters.MySocialAccountAdapter'
+
+# Login ke baad kahan redirect karna hai
+LOGIN_REDIRECT_URL = '/dashboard/' # Apne hisaab se URL name ya path dein
+LOGOUT_REDIRECT_URL = '/auth/' # Logout hone par kahan jaye
+
+# Email configuration for OTP
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'pygenixeditor@gmail.com'  
+EMAIL_HOST_PASSWORD = 'upeq plbm lfqs jmyd'

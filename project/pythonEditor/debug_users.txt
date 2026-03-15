@@ -1,0 +1,74 @@
+[
+  {
+    "email": "nawaz@gmail.com",
+    "name": "Shahnawaz Ansari",
+    "first_name": "",
+    "last_name": ""
+  },
+  {
+    "email": "python@gmail.com",
+    "name": "python",
+    "first_name": "",
+    "last_name": ""
+  },
+  {
+    "email": "test@gmail.com",
+    "name": "test",
+    "first_name": "",
+    "last_name": ""
+  },
+  {
+    "email": "adarshsikarawar63@gmail.com",
+    "name": "Adarsh sikarawar",
+    "first_name": "",
+    "last_name": ""
+  },
+  {
+    "email": "vikaskumar63@gmail.com",
+    "name": "vikaskumar63",
+    "first_name": "",
+    "last_name": ""
+  },
+  {
+    "email": "mohitsikarawar63@gmail.com",
+    "name": "mohit thakur",
+    "first_name": "",
+    "last_name": ""
+  },
+  {
+    "email": "john@gmail.com",
+    "name": "john ",
+    "first_name": "",
+    "last_name": ""
+  },
+  {
+    "email": "ab@ab.com",
+    "name": "Shahnawaz Ansari",
+    "first_name": "",
+    "last_name": ""
+  },
+  {
+    "email": "abcd@abcd.com",
+    "name": "Shahnawaz ",
+    "first_name": "",
+    "last_name": ""
+  },
+  {
+    "email": "minor@gmail.com",
+    "name": "minor",
+    "first_name": "",
+    "last_name": ""
+  },
+  {
+    "email": "sunilsikarawar987@gmail.com",
+    "name": "adarsh thakur",
+    "first_name": "Meme",
+    "last_name": "world"
+  },
+  {
+    "email": "ruchisikarwar1993@gmail.com",
+    "name": "ruchisikarwar1993",
+    "first_name": "Ruchi",
+    "last_name": "Sikarwar"
+  }
+]

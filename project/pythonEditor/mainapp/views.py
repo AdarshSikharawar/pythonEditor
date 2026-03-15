@@ -1,9 +1,8 @@
 from django.shortcuts import render, redirect , get_object_or_404
-from .models import OurUser
+from .models import OurUser, OTPVerification
 from django.http import JsonResponse, FileResponse, Http404 ,HttpResponseNotFound
 from django.contrib import messages
 import google.generativeai as genai
-from django.http import JsonResponse
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 import os
@@ -12,6 +11,9 @@ import json
 from django.views.decorators.csrf import csrf_exempt
 from .models import UserFile
 import mimetypes
+import random
+from django.core.mail import send_mail
+from django.utils import timezone
 
 
 genai.configure(api_key="YOUR_API_KEY_HERE")
@@ -21,11 +23,24 @@ def index(request):
 
 
 
+def send_otp_email(email, otp, purpose):
+    if purpose == 'password_reset':
+        subject = 'PyGenix Password Reset OTP'
+        message = f'Hi there,\n\nYour One-Time Password for resetting your password is: {otp}\n\nThis OTP is valid for 10 minutes. If you did not request this, please ignore this email.'
+    else:
+        subject = f"Your {purpose.capitalize()} OTP - PyGenix Editor"
+        message = f"Your One-Time Password (OTP) for {purpose} is: {otp}\n\nThis OTP is valid for 10 minutes.\nDo not share this with anyone."
+    from_email = settings.EMAIL_HOST_USER if hasattr(settings, 'EMAIL_HOST_USER') else 'noreply@pygenix.com'
+    try:
+        send_mail(subject, message, from_email, [email], fail_silently=False)
+        return True
+    except Exception as e:
+        print(f"Failed to send email: {e}")
+        return False
+
 def auth_view(request):
-    # form_to_show = request.GET.get('form', 'login')
     if request.method == "POST":
         form_type = request.POST.get("form_type")
-
 
         if form_type == "signup":
             name = request.POST.get('name')
@@ -37,11 +52,24 @@ def auth_view(request):
                 messages.error(request, "Passwords do not match")
             elif OurUser.objects.filter(email=email).exists():
                 messages.error(request, "Email already registered")
-
             else:
-                OurUser.objects.create_user(email=email, password=password, name=name)
-               
-                messages.success(request, "You are registered successfully!")
+                # Generate OTP and store temporary signup data
+                otp = str(random.randint(100000, 999999))
+                OTPVerification.objects.filter(email=email, purpose='signup').delete()
+                OTPVerification.objects.create(
+                    email=email, 
+                    otp=otp, 
+                    purpose='signup',
+                    temp_data={'name': name, 'password': password}
+                )
+                
+                # Send email
+                send_otp_email(email, otp, 'signup')
+                
+                request.session['verify_email'] = email
+                request.session['verify_purpose'] = 'signup'
+                messages.info(request, f"Please check your email ({email}) for an OTP to complete registration.")
+                return redirect("verify_otp")
             
             return redirect("auth")
         
@@ -52,8 +80,22 @@ def auth_view(request):
             user = authenticate(request, email=email, password=password)
 
             if user is not None:
-                login(request, user)
-                return redirect("dashboard")
+                # User authenticated, generate OTP instead of logging in
+                otp = str(random.randint(100000, 999999))
+                OTPVerification.objects.filter(email=email, purpose='login').delete()
+                OTPVerification.objects.create(
+                    email=email, 
+                    otp=otp, 
+                    purpose='login'
+                )
+                
+                # Send email
+                send_otp_email(email, otp, 'login')
+                
+                request.session['verify_email'] = email
+                request.session['verify_purpose'] = 'login'
+                messages.info(request, f"Please check your email ({email}) for an OTP to login.")
+                return redirect("verify_otp")
             else:
                 messages.error(request, "Invalid email or password")
             
@@ -61,7 +103,134 @@ def auth_view(request):
             
     return render(request, 'authentication.html')
 
+def forgot_password(request):
+    if request.method == "POST":
+        email = request.POST.get('email')
+        
+        # Check if user exists
+        if not OurUser.objects.filter(email=email).exists():
+            messages.error(request, "This email is not registered with PyGenix.")
+            return redirect("forgot_password")
+            
+        # User exists, generate OTP
+        otp = str(random.randint(100000, 999999))
+        OTPVerification.objects.filter(email=email, purpose='password_reset').delete()
+        OTPVerification.objects.create(
+            email=email, 
+            otp=otp, 
+            purpose='password_reset'
+        )
+        
+        # Send email
+        send_otp_email(email, otp, 'password_reset')
+        
+        request.session['verify_email'] = email
+        request.session['verify_purpose'] = 'password_reset'
+        messages.info(request, f"Please check your email ({email}) for a password reset OTP.")
+        return redirect("verify_otp")
+        
+    return render(request, 'forgot_password.html')
+
+def verify_otp(request):
+    email = request.session.get('verify_email')
+    purpose = request.session.get('verify_purpose')
     
+    if not email or not purpose:
+        messages.error(request, "No active verification session found. Please try again.")
+        return redirect('auth')
+        
+    if request.method == "POST":
+        submitted_otp = request.POST.get('otp')
+        
+        try:
+            # Find the latest valid OTP
+            otp_record = OTPVerification.objects.filter(email=email, purpose=purpose).order_by('-created_at').first()
+            
+            if not otp_record:
+                messages.error(request, "No OTP found. Please request a new one.")
+            elif not otp_record.is_valid():
+                messages.error(request, "OTP has expired. Please request a new one.")
+            elif otp_record.otp != submitted_otp:
+                messages.error(request, "Invalid OTP. Please try again.")
+            else:
+                # OTP is valid!
+                if purpose == 'signup':
+                    temp_data = otp_record.temp_data
+                    user = OurUser.objects.create_user(
+                        email=email, 
+                        password=temp_data['password'], 
+                        name=temp_data['name']
+                    )
+                    login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+                    messages.success(request, "Account created and verified successfully!")
+                    
+                elif purpose == 'login':
+                    user = OurUser.objects.get(email=email)
+                    login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+                    messages.success(request, "Login verified successfully!")
+                    
+                elif purpose == 'password_reset':
+                    # Allow user to reset their password
+                    request.session['can_reset_password'] = True
+                    request.session['reset_email'] = email
+                    
+                    # Clean up OTP and verification session 
+                    del request.session['verify_email']
+                    del request.session['verify_purpose']
+                    OTPVerification.objects.filter(email=email).delete()
+                    
+                    messages.success(request, "OTP verified. Please enter your new password.")
+                    return redirect('reset_password')
+                
+                # Clean up session and OTP records for login/signup
+                if 'verify_email' in request.session:
+                    del request.session['verify_email']
+                if 'verify_purpose' in request.session:
+                    del request.session['verify_purpose']
+                OTPVerification.objects.filter(email=email).delete()
+                
+                return redirect('dashboard')
+                
+        except Exception as e:
+            print(f"Verification error: {e}")
+            messages.error(request, "An error occurred during verification.")
+            
+    return render(request, 'verify_otp.html', {'email': email, 'purpose': purpose})
+
+
+def reset_password(request):
+    # Check if user went through OTP verification for password_reset
+    if not request.session.get('can_reset_password'):
+        messages.error(request, "Unauthorized access. Please verify your email first.")
+        return redirect('forgot_password')
+        
+    if request.method == "POST":
+        password = request.POST.get('password')
+        confirm_password = request.POST.get('confirm-password')
+        email = request.session.get('reset_email')
+        
+        if password != confirm_password:
+            messages.error(request, "Passwords do not match!")
+            return redirect('reset_password')
+            
+        try:
+            user = OurUser.objects.get(email=email)
+            user.set_password(password)
+            user.save()
+            
+            # Clean up session
+            del request.session['can_reset_password']
+            del request.session['reset_email']
+            
+            messages.success(request, "Password reset successfully! You can now log in.")
+            return redirect('auth')
+            
+        except OurUser.DoesNotExist:
+            messages.error(request, "An error occurred. User not found.")
+            return redirect('forgot_password')
+            
+    return render(request, 'reset_password.html')
+
 
 def logout_view(request):
     logout(request)

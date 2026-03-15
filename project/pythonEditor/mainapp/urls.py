@@ -3,12 +3,16 @@ from . import views
 from django.views.generic import RedirectView
 
 urlpatterns = [
-    path('', views.index, name="index"),
-    path('auth/', views.auth_view, name="auth"),
+    path('', views.index, name='index'),
+    path('auth/', views.auth_view, name='auth'),
+    path('verify-otp/', views.verify_otp, name='verify_otp'),
+    path('dashboard/', views.dashboard, name='dashboard'),
     path('logout/', views.logout_view, name='logout'),
+    
+    path('forgot-password/', views.forgot_password, name='forgot_password'),
+    path('reset-password/', views.reset_password, name='reset_password'),
 
     # URL for the editor page
-    path('dashboard/', views.dashboard, name="dashboard"),
     
     path('api/chat/', views.chat_api, name="chat_api"),
     path('profile/', views.profilepage, name="profile"),

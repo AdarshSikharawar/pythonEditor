@@ -1,0 +1,113 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify OTP - PyGenix</title>
+    
+    <link href="{% static 'styles/bootstrap.min.css' %}" rel="stylesheet">
+    <link href="{% static 'styles/theme.css' %}" rel="stylesheet">
+    <link href="{% static 'styles/toast.css' %}" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-image: radial-gradient(circle at top right, rgba(139, 92, 246, 0.15) 0%, transparent 40%),
+                              radial-gradient(circle at bottom left, rgba(76, 29, 149, 0.15) 0%, transparent 40%);
+        }
+        
+        .otp-container {
+            width: 100%;
+            max-width: 450px;
+            padding: 2rem;
+        }
+
+        .otp-input {
+            letter-spacing: 0.5rem;
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="toast-container"></div>
+    
+    <div class="container d-flex justify-content-center">
+        <div class="glass-panel otp-container text-center">
+            
+            <div class="mb-4">
+                <img src="{% static 'img/project_logo.png' %}" alt="PyGenix Logo" style="height: 50px;">
+            </div>
+
+            <h3 class="fw-bold mb-2">Verify Your Email</h3>
+            
+            <p class="text-muted mb-4 small">
+                We've sent a 6-digit one-time password to 
+                <br><strong class="text-light">{{ email }}</strong>
+            </p>
+
+            <form method="POST" action="{% url 'verify_otp' %}">
+                {% csrf_token %}
+                
+                <div class="mb-4">
+                    <label class="form-label text-start d-block small text-light">Enter OTP</label>
+                    <input type="text" name="otp" class="form-control form-control-glass otp-input" required 
+                           maxlength="6" pattern="[0-9]{6}" autocomplete="one-time-code" placeholder="------"
+                           oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                </div>
+
+                <button type="submit" class="btn btn-primary-glass w-100 py-2 fw-bold rounded-pill mb-3">
+                    Verify & Continue
+                </button>
+            </form>
+
+            <p class="small text-muted mt-3">
+                <a href="{% url 'auth' %}" class="text-decoration-none text-primary hover-purple">
+                    &larr; Back to login
+                </a>
+            </p>
+            
+        </div>
+    </div>
+
+    <!-- Hidden container for Django messages -->
+    <div id="django-messages-container" style="display: none;">
+        {% if messages %}
+            {% for message in messages %}
+                <div data-tags="{{ message.tags }}" data-message="{{ message }}"></div>
+            {% endfor %}
+        {% endif %}
+    </div>
+
+    <script src="{% static 'js/toast.js' %}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const messageContainer = document.getElementById('django-messages-container');
+            if (messageContainer) {
+                const messageElements = messageContainer.querySelectorAll('div');
+                messageElements.forEach(el => {
+                    const tags = el.getAttribute('data-tags') || '';
+                    const text = el.getAttribute('data-message') || '';
+                    
+                    let type = 'info';
+                    if (tags.includes('success')) type = 'success';
+                    else if (tags.includes('error') || tags.includes('danger')) type = 'error';
+                    else if (tags.includes('warning')) type = 'warning';
+                    
+                    if (text) showToast(type, text);
+                });
+            }
+        });
+    </script>
+</body>
+</html>
