@@ -35,7 +35,7 @@ STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 # Agar aapka static folder hai toh ye line bhi check kar lein
 STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'static'),
+    os.path.join(BASE_DIR, 'mainapp', 'static'),
 ]
 
 # Application definition
