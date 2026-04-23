@@ -190,7 +190,11 @@ ACCOUNT_EMAIL_VERIFICATION = 'none'
 
 SOCIALACCOUNT_ADAPTER = 'mainapp.adapters.MySocialAccountAdapter'
 
+# Render ke proxy server ko batane ke liye ki connection secure (https) hai
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
+# Aapke domain ko CSRF check ke liye allow karne ke liye
+CSRF_TRUSTED_ORIGINS = ['https://pygenix.onrender.com']
 
 # Login ke baad kahan redirect karna hai
 LOGIN_REDIRECT_URL = '/dashboard/' # Apne hisaab se URL name ya path dein
