@@ -49,19 +49,17 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-
     'django.contrib.sites',
-
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
-    
     # Add your social providers here
     'allauth.socialaccount.providers.google',
     'allauth.socialaccount.providers.github',
 
     'editor',
     'mainapp',
+    'storages',
 ]
 
 SITE_ID = 1
@@ -217,6 +215,8 @@ AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY')
 AWS_STORAGE_BUCKET_NAME = 'media' # Jo naam aapne Supabase bucket ko diya
 AWS_S3_ENDPOINT_URL = f"https://{os.environ.get('SUPABASE_PROJECT_ID')}.supabase.co/storage/v1/s3"
 AWS_S3_REGION_NAME = 'us-east-1' 
+AWS_S3_FILE_OVERWRITE = False
+AWS_DEFAULT_ACL = None
 
 # Django storage backend
 DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
