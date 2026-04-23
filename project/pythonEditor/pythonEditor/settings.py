@@ -235,6 +235,4 @@ DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
 # Taaki Supabase link expired na dikhaye
 AWS_QUERYSTRING_AUTH = False
 
-# settings.py mein ye line add karein
-WHITENOISE_MANIFEST_STRICT = False
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
