@@ -235,4 +235,8 @@ DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
 # Taaki Supabase link expired na dikhaye
 AWS_QUERYSTRING_AUTH = False
 
+# 1. Manifest storage ko hata kar normal compressed karein
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
+
+# 2. Agar koi file missing ho (jaise .map), toh build fail na kare
+WHITENOISE_MANIFEST_STRICT = False
