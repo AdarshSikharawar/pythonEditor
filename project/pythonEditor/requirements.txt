@@ -7,3 +7,8 @@ google-generativeai
 Pillow
 numpy
 websockets
+gunicorn
+dj-database-url
+psycopg2-binary
+django-storages
+boto3
