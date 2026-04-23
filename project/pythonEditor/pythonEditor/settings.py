@@ -216,6 +216,12 @@ AWS_S3_ENDPOINT_URL = f"https://{os.environ.get('SUPABASE_PROJECT_ID')}.supabase
 AWS_S3_REGION_NAME = 'us-east-1' 
 AWS_S3_FILE_OVERWRITE = False
 AWS_DEFAULT_ACL = None
+AWS_S3_SIGNATURE_VERSION = 's3v4'
+AWS_S3_ADDRESSING_STYLE = "path"
+AWS_S3_VERIFY = True
+
+# Ye line check karein, isme 'service_role' key honi chahiye (eyJ...)
+AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY')
 # to load profile img from supabase
 MEDIA_URL = f'https://{AWS_ACCESS_KEY_ID}.supabase.co/storage/v1/object/public/{AWS_STORAGE_BUCKET_NAME}/'
 
