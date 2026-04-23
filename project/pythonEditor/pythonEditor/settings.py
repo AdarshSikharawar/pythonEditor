@@ -188,9 +188,12 @@ ACCOUNT_EMAIL_VERIFICATION = 'none'
 
 SOCIALACCOUNT_ADAPTER = 'mainapp.adapters.MySocialAccountAdapter'
 
+
+
 # Login ke baad kahan redirect karna hai
 LOGIN_REDIRECT_URL = '/dashboard/' # Apne hisaab se URL name ya path dein
 LOGOUT_REDIRECT_URL = '/auth/' # Logout hone par kahan jaye
+SOCIALACCOUNT_LOGIN_ON_GET = True
 
 # Email configuration for OTP
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
