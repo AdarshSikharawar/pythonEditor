@@ -29,7 +29,14 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
-# STATIC_ROOT = BASE_DIR / 'staticfiles'
+# Ye batata hai ki URL kya hoga
+STATIC_URL = '/static/'
+# Ye batata hai ki Render ke server par files kahan save hongi (YE MISSING THA)
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+# Agar aapka static folder hai toh ye line bhi check kar lein
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static'),
+]
 
 # Application definition
 
