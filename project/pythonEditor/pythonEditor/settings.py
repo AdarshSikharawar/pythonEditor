@@ -219,7 +219,20 @@ AWS_DEFAULT_ACL = None
 # to load profile img from supabase
 MEDIA_URL = f'https://{AWS_ACCESS_KEY_ID}.supabase.co/storage/v1/object/public/{AWS_STORAGE_BUCKET_NAME}/'
 
-# Django storage backend
+# Naye Django versions ke liye ye format best hai
+STORAGES = {
+    "default": {
+        "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
+
+# Purani settings ko force karne ke liye (Backup)
 DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+
+# Taaki Supabase link expired na dikhaye
+AWS_QUERYSTRING_AUTH = False
 
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
