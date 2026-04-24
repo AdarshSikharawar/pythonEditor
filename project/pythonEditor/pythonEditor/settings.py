@@ -175,7 +175,6 @@ USE_TZ = True
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-AUTH_USER_MODEL = 'mainapp.OurUser'
 LOGIN_URL = 'auth'
 
 # Allauth settings
@@ -220,10 +219,8 @@ AWS_S3_SIGNATURE_VERSION = 's3v4'
 AWS_S3_ADDRESSING_STYLE = "path"
 AWS_S3_VERIFY = True
 
-# Ye line check karein, isme 'service_role' key honi chahiye (eyJ...)
-AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY')
 # to load profile img from supabase
-MEDIA_URL = f'https://{AWS_ACCESS_KEY_ID}.supabase.co/storage/v1/object/public/{AWS_STORAGE_BUCKET_NAME}/'
+MEDIA_URL = f"https://{os.environ.get('SUPABASE_PROJECT_ID')}.supabase.co/storage/v1/object/public/media/"
 
 # Naye Django versions ke liye ye format best hai
 STORAGES = {
