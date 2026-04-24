@@ -221,6 +221,7 @@ AWS_S3_VERIFY = True
 
 # to load profile img from supabase
 MEDIA_URL = f"https://{os.environ.get('SUPABASE_PROJECT_ID')}.supabase.co/storage/v1/object/public/media/"
+AWS_S3_CUSTOM_DOMAIN = f"{os.environ.get('SUPABASE_PROJECT_ID')}.supabase.co/storage/v1/object/public/media"
 
 # Naye Django versions ke liye ye format best hai
 STORAGES = {
