@@ -7,3 +7,4 @@ google-generativeai
 Pillow
 numpy
 websockets
+PyJWT>=2.0
