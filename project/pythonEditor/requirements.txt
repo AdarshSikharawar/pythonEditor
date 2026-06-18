@@ -8,13 +8,3 @@ Pillow
 numpy
 websockets
 PyJWT>=2.0
-
-# Deployment/runtime deps used by settings.py
-dj-database-url
-whitenoise
-channels-redis
-redis
-django-storages
-
-# Common Postgres driver for Render
-psycopg2-binary
