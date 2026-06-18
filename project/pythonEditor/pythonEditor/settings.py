@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+import dj_database_url
 import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -26,9 +27,16 @@ SECRET_KEY = 'django-insecure-w+tlf+$aswb13lc5@2+3fq8g_1#&o%jfy+e37+cdafkukf_3+w
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
-# STATIC_ROOT = BASE_DIR / 'staticfiles'
+# Ye batata hai ki URL kya hoga
+STATIC_URL = '/static/'
+# Ye batata hai ki Render ke server par files kahan save hongi (YE MISSING THA)
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+# Agar aapka static folder hai toh ye line bhi check kar lein
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'mainapp', 'static'),
+]
 
 # Application definition
 
@@ -41,19 +49,17 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-
     'django.contrib.sites',
-
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
-    
     # Add your social providers here
     'allauth.socialaccount.providers.google',
     'allauth.socialaccount.providers.github',
 
     'editor',
     'mainapp',
+    'storages',
 ]
 
 SITE_ID = 1
@@ -76,6 +82,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'allauth.account.middleware.AccountMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
 ]
 
 ROOT_URLCONF = 'pythonEditor.urls'
@@ -83,8 +90,10 @@ ROOT_URLCONF = 'pythonEditor.urls'
 # MEDIA_URL = '/media/'
 # MEDIA_ROOT = BASE_DIR / 'media'
 
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-MEDIA_URL = '/media/'
+# MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+# MEDIA_URL = '/media/'
+# Isse images seedha load hongi
+
 
 
 TEMPLATES = [
@@ -107,24 +116,25 @@ ASGI_APPLICATION = 'pythonEditor.asgi.application'
 
 CHANNEL_LAYERS = {
     'default': {
-        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [os.environ.get('REDIS_URL', 'redis://127.0.0.1:6379')],
+        },
     },
 }
-
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': dj_database_url.config(
+        default=os.environ.get('DATABASE_URL'),
+        conn_max_age=600
+    )
 }
 
 from django.contrib import admin
 from django.urls import path, include
-
 
 
 # Password validation
@@ -158,17 +168,13 @@ USE_I18N = True
 USE_TZ = True
 
 
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = '/static/'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-AUTH_USER_MODEL = 'mainapp.OurUser'
 LOGIN_URL = 'auth'
 
 # Allauth settings
@@ -180,9 +186,16 @@ ACCOUNT_EMAIL_VERIFICATION = 'none'
 
 SOCIALACCOUNT_ADAPTER = 'mainapp.adapters.MySocialAccountAdapter'
 
+# Render ke proxy server ko batane ke liye ki connection secure (https) hai
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# Aapke domain ko CSRF check ke liye allow karne ke liye
+CSRF_TRUSTED_ORIGINS = ['https://pygenix.onrender.com']
+
 # Login ke baad kahan redirect karna hai
 LOGIN_REDIRECT_URL = '/dashboard/' # Apne hisaab se URL name ya path dein
 LOGOUT_REDIRECT_URL = '/auth/' # Logout hone par kahan jaye
+SOCIALACCOUNT_LOGIN_ON_GET = True
 
 # Email configuration for OTP
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
@@ -191,4 +204,4 @@ EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'pygenixeditor@gmail.com'  
-EMAIL_HOST_PASSWORD = 'cviw elld pgzh womb'
+EMAIL_HOST_PASSWORD = 'upeq plbm lfqs jmyd'

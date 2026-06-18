@@ -64,6 +64,23 @@ class OurUser(AbstractUser):
 
     def __str__(self):
         return self.email
+
+    def save(self, *args, **kwargs):
+        try:
+            old_user = OurUser.objects.get(pk=self.pk)
+            old_photo = old_user.profile_photo
+
+            # Purani photo thi, nayi alag hai, aur default nahi hai
+            if (old_photo and 
+                old_photo.name != self.profile_photo.name and 
+                old_photo.name != 'profile_photos/default.png'):
+                
+                old_photo.delete(save=False)  # Supabase bucket se delete
+
+        except OurUser.DoesNotExist:
+            pass  # Naya user, kuch nahi karna
+
+        super().save(*args, **kwargs)    
     
 
 class UserFile(models.Model):
@@ -124,4 +141,4 @@ class Message(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"From {self.sender.email} to {self.receiver.email} at {self.timestamp}"
+        return f"From {self.sender.email} to {self.receiver.email} at {self.timestamp}"
