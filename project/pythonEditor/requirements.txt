@@ -8,3 +8,12 @@ Pillow
 numpy
 websockets
 PyJWT>=2.0
+
+# Render / production (required by settings.py)
+dj-database-url
+whitenoise
+channels-redis
+redis
+django-storages
+boto3
+psycopg2-binary
