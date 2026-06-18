@@ -137,7 +137,7 @@ def forgot_password(request):
         # Seedha redirect karo - email background mein jayegi
         request.session['verify_email'] = email
         request.session['verify_purpose'] = 'password_reset'
-        messages.info(request, f"OTP bheja ja raha hai {email} par, please check karein.")
+        messages.info(request, f"OTP is sent on {email}, please check.")
         return redirect("verify_otp")
         
     return render(request, 'forgot_password.html')
