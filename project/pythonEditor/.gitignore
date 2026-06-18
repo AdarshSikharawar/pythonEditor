@@ -2,3 +2,9 @@ venv/
 __pycache__/
 *.pyc
 db.sqlite3
+
+# Collected static output (do not commit)
+staticfiles/
+
+# User uploads
+media/
