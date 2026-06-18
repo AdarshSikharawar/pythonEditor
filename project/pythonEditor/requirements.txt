@@ -10,3 +10,4 @@ websockets
 PyJWT>=2.0
 dj-database-url
 django-storages
+boto3
