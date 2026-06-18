@@ -559,6 +559,9 @@
             <button id="download-btn" class="btn btn-outline-glass btn-sm px-2 py-1">
                 <i class="bi bi-download"></i> Download.py
             </button>
+            <button id="friends-btn" class="btn btn-outline-glass btn-sm px-2 py-1" onclick="openFriendsPanel()" {% if is_guest %}style="display: none;"{% endif %}>
+                <i class="bi bi-person-lines-fill"></i> Friends
+            </button>
             <button id="collab-btn" class="btn btn-outline-glass btn-sm px-2 py-1" onclick="document.getElementById('collab-dialog').showModal()">
                 <i class="bi bi-people"></i> Collaborate
             </button>
@@ -695,6 +698,9 @@
             <span id="collab-status" class="badge rounded-pill bg-success align-items-center" style="display: none; padding-right: 0.4rem;">
                 <i class="bi bi-people-fill me-1"></i> 
                 <span id="collab-room-id" class="me-2"></span>
+                <button class="btn btn-sm btn-link text-white p-0 m-0 me-2" style="text-decoration: none; line-height: 1;" onclick="copyRoomId()" title="Copy Room ID">
+                    <i class="bi bi-clipboard"></i>
+                </button>
                 <button class="btn btn-sm btn-link text-white p-0 m-0" style="text-decoration: none; line-height: 1;" onclick="window.leaveCollabRoom()" title="Leave Room">
                     <i class="bi bi-x-circle-fill"></i>
                 </button>
@@ -885,6 +891,77 @@
         </menu>
     </dialog>
 
+    <!-- ✅ Friends Dialog -->
+    <dialog id="friends-dialog" style="margin: 70px auto; border: 1px solid var(--glass-border); border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.6); padding: 1.5rem; width: 400px; max-height: 80vh; overflow-y: auto; background: var(--bg-dark-secondary); color: var(--text-light);">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0"><i class="bi bi-person-lines-fill"></i> Friends</h5>
+            <button class="btn btn-sm btn-link text-white p-0 m-0" onclick="document.getElementById('friends-dialog').close()"><i class="bi bi-x-lg"></i></button>
+        </div>
+
+        <!-- Add Friend form always visible -->
+        <div class="input-group mb-3">
+            <input type="email" id="add-friend-email" class="form-control form-control-glass" placeholder="Enter Friend's Email to Add">
+            <button class="btn btn-primary-glass" onclick="sendFriendRequest()">Send Request</button>
+        </div>
+        
+        <ul class="nav nav-tabs mb-3" id="friendsTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active bg-transparent text-light" id="list-tab" data-bs-toggle="tab" data-bs-target="#list-pane" type="button" role="tab">My Friends</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link bg-transparent text-light" id="requests-tab" data-bs-toggle="tab" data-bs-target="#requests-pane" type="button" role="tab">Requests</button>
+            </li>
+        </ul>
+        
+        <div class="tab-content" id="friendsTabContent">
+            <div class="tab-pane fade show active" id="list-pane" role="tabpanel">
+                <ul id="friends-list-container" class="list-group list-group-flush mb-3">
+                    <!-- Friends populated here -->
+                </ul>
+            </div>
+            <div class="tab-pane fade" id="requests-pane" role="tabpanel">
+                <h6 class="text-muted small">Pending Incoming</h6>
+                <ul id="incoming-requests-container" class="list-group list-group-flush mb-3">
+                </ul>
+                
+                <h6 class="text-muted small">Pending Outgoing</h6>
+                <ul id="outgoing-requests-container" class="list-group list-group-flush mb-3">
+                </ul>
+            </div>
+        </div>
+    </dialog>
+
+    <!-- ✅ Chat Dialog -->
+    <dialog id="chat-dialog" style="margin: 70px auto; border: 1px solid var(--glass-border); border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.6); padding: 0; width: 450px; height: 500px; background: var(--bg-dark-secondary); color: var(--text-light); flex-direction: column;">
+        <div class="p-3 border-bottom d-flex justify-content-between align-items-center" style="border-color: var(--glass-border) !important;">
+            <h5 class="mb-0" id="chat-friend-name">Chat</h5>
+            <div>
+                <button class="btn btn-sm btn-outline-glass me-2" onclick="openSendFileModal()"><i class="bi bi-file-earmark-code"></i> Send File</button>
+                <button class="btn btn-sm btn-link text-white p-0 m-0" onclick="closeChat()"><i class="bi bi-x-lg"></i></button>
+            </div>
+        </div>
+        <div id="chat-messages" class="p-3 flex-grow-1" style="overflow-y: auto; background: var(--bg-dark); display: flex; flex-direction: column; gap: 10px;">
+            <!-- Messages -->
+        </div>
+        <div class="p-3 border-top" style="border-color: var(--glass-border) !important;">
+            <div class="input-group">
+                <input type="text" id="chat-input" class="form-control form-control-glass" placeholder="Type a message..." onkeypress="if(event.key === 'Enter') sendChatMessage()">
+                <button class="btn btn-primary-glass" onclick="sendChatMessage()"><i class="bi bi-send"></i></button>
+            </div>
+        </div>
+    </dialog>
+
+    <!-- ✅ Send File Dialog -->
+    <dialog id="send-file-dialog" style="margin: 15vh auto; border: 1px solid var(--glass-border); border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.6); padding: 1.5rem; width: 350px; background: var(--bg-dark-secondary); color: var(--text-light);">
+        <h5 class="mb-3">Select File to Send</h5>
+        <ul id="send-file-list" class="list-group list-group-flush mb-3" style="max-height: 200px; overflow-y: auto;">
+            <!-- Files populated here -->
+        </ul>
+        <div class="text-end mt-3">
+            <button class="btn btn-sm btn-secondary" onclick="document.getElementById('send-file-dialog').close()">Cancel</button>
+        </div>
+    </dialog>
+
     <!-- ✅ Mobile Menu Overlay -->
     <div id="mobile-menu-overlay">
         <div class="menu-content">
@@ -953,6 +1030,25 @@
     <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
     <script src="{% static 'js/toast.js' %}"></script>
     <script src="{% static 'js/editor.js' %}?v=10"></script>
+    <script>
+        function copyRoomId() {
+            const roomId = document.getElementById('collab-room-id').innerText;
+            if (roomId) {
+                navigator.clipboard.writeText(roomId).then(() => {
+                    if (typeof showToast === 'function') {
+                        showToast('success', 'Room ID copied to clipboard!');
+                    } else {
+                        alert('Room ID copied!');
+                    }
+                }).catch(err => {
+                    console.error('Failed to copy: ', err);
+                    if (typeof showToast === 'function') {
+                        showToast('error', 'Failed to copy Room ID');
+                    }
+                });
+            }
+        }
+    </script>
     <!-- Hidden container for Django messages to avoid IDE errors in JS -->
     <div id="django-messages-container" style="display: none;">
         {% if messages %}
@@ -982,6 +1078,7 @@
             }
         });
     </script>
+    <script src="{% static 'js/friends.js' %}"></script>
 </body>
 
 </html>

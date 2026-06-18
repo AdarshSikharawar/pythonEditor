@@ -1,0 +1,6 @@
+{
+    "python.analysis.extraPaths": [
+        "./project/pythonEditor"
+    ],
+    "python.defaultInterpreterPath": "./.venv/Scripts/python.exe"
+}

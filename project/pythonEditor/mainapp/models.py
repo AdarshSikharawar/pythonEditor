@@ -95,4 +95,33 @@ class OTPVerification(models.Model):
         return (timezone.now() - self.created_at).total_seconds() < 600
 
     def __str__(self):
-        return f"{self.email} - {self.otp} ({self.purpose})"
+        return f"{self.email} - {self.otp} ({self.purpose})"
+
+class FriendRequest(models.Model):
+    from_user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='sent_requests', on_delete=models.CASCADE)
+    to_user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='received_requests', on_delete=models.CASCADE)
+    status = models.CharField(max_length=20, choices=[('pending', 'Pending'), ('accepted', 'Accepted'), ('rejected', 'Rejected')], default='pending')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"From {self.from_user.email} to {self.to_user.email} ({self.status})"
+
+class Friendship(models.Model):
+    user1 = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='friendships1', on_delete=models.CASCADE)
+    user2 = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='friendships2', on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user1.email} & {self.user2.email}"
+
+class Message(models.Model):
+    sender = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='sent_messages', on_delete=models.CASCADE)
+    receiver = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='received_messages', on_delete=models.CASCADE)
+    content = models.TextField(blank=True, null=True) # Text message
+    is_file = models.BooleanField(default=False)
+    file_name = models.CharField(max_length=255, blank=True, null=True)
+    file_content = models.TextField(blank=True, null=True) # Full code snippet
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"From {self.sender.email} to {self.receiver.email} at {self.timestamp}"

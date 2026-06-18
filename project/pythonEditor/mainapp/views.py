@@ -522,3 +522,184 @@ def update_theme(request):
             request.user.save()
             return JsonResponse({"status": "success", "theme": theme})
     return JsonResponse({"status": "error"}, status=400)
+
+
+# --- FRIEND SYSTEM AND MESSAGING APIs ---
+from django.db.models import Q
+from .models import FriendRequest, Friendship, Message
+
+@login_required
+@csrf_exempt
+def send_friend_request(request):
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            email = data.get("email")
+            if email == request.user.email:
+                return JsonResponse({"status": "error", "message": "You cannot send a request to yourself."}, status=400)
+            
+            try:
+                to_user = OurUser.objects.get(email=email)
+            except OurUser.DoesNotExist:
+                return JsonResponse({"status": "error", "message": "User with this email does not exist."}, status=404)
+            
+            # Check if already friends
+            if Friendship.objects.filter(Q(user1=request.user, user2=to_user) | Q(user1=to_user, user2=request.user)).exists():
+                return JsonResponse({"status": "error", "message": "You are already friends."}, status=400)
+            
+            # Check if request already sent or pending
+            if FriendRequest.objects.filter(from_user=request.user, to_user=to_user, status='pending').exists():
+                return JsonResponse({"status": "error", "message": "Friend request already sent."}, status=400)
+            if FriendRequest.objects.filter(from_user=to_user, to_user=request.user, status='pending').exists():
+                return JsonResponse({"status": "error", "message": "This user has already sent you a request. Please accept it."}, status=400)
+            
+            FriendRequest.objects.create(from_user=request.user, to_user=to_user)
+            return JsonResponse({"status": "success", "message": "Friend request sent!"})
+        except Exception as e:
+            return JsonResponse({"status": "error", "message": str(e)}, status=500)
+    return JsonResponse({"status": "error", "message": "Invalid method"}, status=405)
+
+@login_required
+def list_friend_requests(request):
+    incoming = FriendRequest.objects.filter(to_user=request.user, status='pending')
+    outgoing = FriendRequest.objects.filter(from_user=request.user, status='pending')
+    
+    in_data = [{"id": req.id, "email": req.from_user.email, "name": req.from_user.name} for req in incoming]
+    out_data = [{"id": req.id, "email": req.to_user.email, "name": req.to_user.name} for req in outgoing]
+    
+    return JsonResponse({"incoming": in_data, "outgoing": out_data})
+
+@login_required
+@csrf_exempt
+def respond_friend_request(request):
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            request_id = data.get("request_id")
+            action = data.get("action") # 'accept' or 'reject'
+            
+            req = get_object_or_404(FriendRequest, id=request_id, to_user=request.user, status='pending')
+            
+            if action == 'accept':
+                req.status = 'accepted'
+                req.save()
+                Friendship.objects.create(user1=req.from_user, user2=req.to_user)
+                return JsonResponse({"status": "success", "message": "Friend request accepted."})
+            elif action == 'reject':
+                req.status = 'rejected'
+                req.save()
+                return JsonResponse({"status": "success", "message": "Friend request rejected."})
+            return JsonResponse({"status": "error", "message": "Invalid action."}, status=400)
+        except Exception as e:
+            return JsonResponse({"status": "error", "message": str(e)}, status=500)
+    return JsonResponse({"status": "error", "message": "Invalid method"}, status=405)
+
+@login_required
+def list_friends(request):
+    friendships = Friendship.objects.filter(Q(user1=request.user) | Q(user2=request.user))
+    friends = []
+    for f in friendships:
+        friend_obj = f.user2 if f.user1 == request.user else f.user1
+        friends.append({"id": friend_obj.id, "email": friend_obj.email, "name": friend_obj.name})
+    return JsonResponse({"friends": friends})
+
+@login_required
+def get_messages(request, friend_id):
+    friend = get_object_or_404(OurUser, id=friend_id)
+    # Ensure they are friends
+    if not Friendship.objects.filter(Q(user1=request.user, user2=friend) | Q(user1=friend, user2=request.user)).exists():
+        return JsonResponse({"status": "error", "message": "Not friends."}, status=403)
+        
+    msgs = Message.objects.filter(
+        Q(sender=request.user, receiver=friend) | Q(sender=friend, receiver=request.user)
+    ).order_by('timestamp')
+    
+    data = []
+    for m in msgs:
+        data.append({
+            "id": m.id,
+            "sender_id": m.sender.id,
+            "sender_name": m.sender.name,
+            "content": m.content,
+            "is_file": m.is_file,
+            "file_name": m.file_name,
+            "file_content": m.file_content,
+            "timestamp": m.timestamp.strftime("%Y-%m-%d %H:%M:%S")
+        })
+    return JsonResponse({"messages": data})
+
+@login_required
+@csrf_exempt
+def send_message(request):
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            friend_id = data.get("friend_id")
+            content = data.get("content", "")
+            is_file = data.get("is_file", False)
+            user_file_id = data.get("file_id")
+            file_name_from_js = data.get("file_name")
+            
+            friend = get_object_or_404(OurUser, id=friend_id)
+            if not Friendship.objects.filter(Q(user1=request.user, user2=friend) | Q(user1=friend, user2=request.user)).exists():
+                return JsonResponse({"status": "error", "message": "Not friends."}, status=403)
+                
+            msg = Message(sender=request.user, receiver=friend, is_file=is_file)
+            
+            if is_file:
+                if user_file_id:
+                    user_file = get_object_or_404(UserFile, id=user_file_id, user=request.user)
+                    with open(user_file.file_path, 'r', encoding='utf-8') as f:
+                        file_text = f.read()
+                    msg.file_name = user_file.file_name
+                    msg.file_content = file_text
+                elif file_name_from_js:
+                    msg.file_name = file_name_from_js
+                    msg.file_content = content
+            else:
+                msg.content = content
+                
+            msg.save()
+            return JsonResponse({"status": "success", "message": "Message sent."})
+        except Exception as e:
+            return JsonResponse({"status": "error", "message": str(e)}, status=500)
+    return JsonResponse({"status": "error", "message": "Invalid method"}, status=405)
+
+@login_required
+@csrf_exempt
+def save_received_file(request):
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            message_id = data.get("message_id")
+            
+            msg = get_object_or_404(Message, id=message_id, receiver=request.user, is_file=True)
+            
+            # Use existing logic to save code
+            user_folder = os.path.join(settings.MEDIA_ROOT, f"user_{request.user.id}")
+            os.makedirs(user_folder, exist_ok=True)
+
+            filename = getattr(msg, 'file_name', 'received_file.py')
+            # ensure no overwrite of existing exact names, or just overwrite
+            # let's just let it overwrite or we can append something.
+            # to keep it simple, overwrite or save as is
+            file_path = os.path.join(user_folder, filename)
+            with open(file_path, "w", encoding="utf-8") as f:
+                f.write(msg.file_content)
+
+            file_size = os.path.getsize(file_path) / 1024  # KB
+
+            # Save or update in DB
+            UserFile.objects.update_or_create(
+                user=request.user,
+                file_name=filename,
+                defaults={
+                    'file_path': file_path,
+                    'file_size': file_size
+                }
+            )
+            return JsonResponse({"status": "success", "message": "File saved to your PyGenix."})
+        except Exception as e:
+            return JsonResponse({"status": "error", "message": str(e)}, status=500)
+    return JsonResponse({"status": "error", "message": "Invalid method"}, status=405)
+
