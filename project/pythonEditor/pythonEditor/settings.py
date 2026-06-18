@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 from pathlib import Path
 import dj_database_url
 import os
+import ssl as ssl_lib
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -120,11 +121,16 @@ TEMPLATES = [
 WSGI_APPLICATION = 'pythonEditor.wsgi.application'
 ASGI_APPLICATION = 'pythonEditor.asgi.application'
 
+
+
 CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
         'CONFIG': {
-            "hosts": [os.environ.get('REDIS_URL')],
+            "hosts": [{
+                "address": os.environ.get('REDIS_URL'),
+                "ssl": ssl_lib.SSLContext(ssl_lib.PROTOCOL_TLS_CLIENT),
+            }],
         },
     },
 }
