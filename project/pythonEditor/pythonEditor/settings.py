@@ -226,7 +226,7 @@ LOGOUT_REDIRECT_URL = '/auth/' # Logout hone par kahan jaye
 SOCIALACCOUNT_LOGIN_ON_GET = True
 
 # Email configuration for OTP
-EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "hzoh itxd rdkk lyic")
+EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "hzohitxdrdkklyic")
 
 if EMAIL_HOST_PASSWORD:
     EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'

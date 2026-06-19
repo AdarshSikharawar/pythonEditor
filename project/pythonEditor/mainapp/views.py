@@ -32,6 +32,7 @@ def send_otp_email(email, otp, purpose):
         subject = f"Your {purpose.capitalize()} OTP - PyGenix Editor"
         message = f"Your One-Time Password (OTP) for {purpose} is: {otp}\n\nThis OTP is valid for 10 minutes.\nDo not share this with anyone."
     from_email = settings.EMAIL_HOST_USER if hasattr(settings, 'EMAIL_HOST_USER') else 'noreply@pygenix.com'
+    print(f"[OTP DEBUG] Generated OTP for {email} ({purpose}): {otp}")
     try:
         send_mail(subject, message, from_email, [email], fail_silently=False)
         return True
