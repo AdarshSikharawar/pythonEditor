@@ -14,6 +14,7 @@ import mimetypes
 import random
 from django.core.mail import send_mail
 from django.utils import timezone
+import threading
 
 
 genai.configure(api_key="YOUR_API_KEY_HERE")
@@ -112,21 +113,31 @@ def forgot_password(request):
             messages.error(request, "This email is not registered with PyGenix.")
             return redirect("forgot_password")
             
-        # User exists, generate OTP
+        # OTP generate karo
         otp = str(random.randint(100000, 999999))
+        
+        # Purana OTP delete karo
         OTPVerification.objects.filter(email=email, purpose='password_reset').delete()
+        
+        # Naya OTP save karo
         OTPVerification.objects.create(
             email=email, 
             otp=otp, 
             purpose='password_reset'
         )
         
-        # Send email
-        send_otp_email(email, otp, 'password_reset')
+        # Background thread mein email bhejo - request block nahi hogi
+        t = threading.Thread(
+            target=send_otp_email,
+            args=(email, otp, 'password_reset'),
+            daemon=True
+        )
+        t.start()
         
+        # Seedha redirect karo - email background mein jayegi
         request.session['verify_email'] = email
         request.session['verify_purpose'] = 'password_reset'
-        messages.info(request, f"Please check your email ({email}) for a password reset OTP.")
+        messages.info(request, f"OTP is sent on {email}, please check.")
         return redirect("verify_otp")
         
     return render(request, 'forgot_password.html')
