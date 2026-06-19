@@ -259,7 +259,9 @@ def dashboard(request):
 
 
 def get_user_code_dir(user):
-    return os.path.join(settings.MEDIA_ROOT, 'user_files', user.email)
+    media_root = str(settings.MEDIA_ROOT or "")
+    user_email = str(user.email or "")
+    return os.path.join(media_root, 'user_files', user_email)
 
 @csrf_exempt
 @login_required
@@ -269,7 +271,8 @@ def save_code_api(request):
         filename = data.get("filename")
         content = data.get("content")
 
-        user_folder = os.path.join(settings.MEDIA_ROOT, f"user_{request.user.id}")
+        media_root = str(settings.MEDIA_ROOT or "")
+        user_folder = os.path.join(media_root, f"user_{request.user.id}")
         os.makedirs(user_folder, exist_ok=True)
 
         file_path = os.path.join(user_folder, filename)
@@ -331,7 +334,8 @@ def update_file(request):
     content = data.get("content")
     file_size = data.get("file_size")
 
-    user_dir = os.path.join(settings.MEDIA_ROOT, f"user_{request.user.id}")
+    media_root = str(settings.MEDIA_ROOT or "")
+    user_dir = os.path.join(media_root, f"user_{request.user.id}")
     file_path = os.path.join(user_dir, filename)
 
     with open(file_path, "w", encoding="utf-8") as f:
@@ -676,7 +680,8 @@ def save_received_file(request):
             msg = get_object_or_404(Message, id=message_id, receiver=request.user, is_file=True)
             
             # Use existing logic to save code
-            user_folder = os.path.join(settings.MEDIA_ROOT, f"user_{request.user.id}")
+            media_root = str(settings.MEDIA_ROOT or "")
+            user_folder = os.path.join(media_root, f"user_{request.user.id}")
             os.makedirs(user_folder, exist_ok=True)
 
             filename = getattr(msg, 'file_name', 'received_file.py')

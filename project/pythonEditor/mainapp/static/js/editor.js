@@ -9,6 +9,9 @@ const AUTO_SAVE_DELAY = 2000;
 let collabSocket = null;
 let currentRoom = null;
 let isRemoteChange = false; // Prevent feedback loops
+let heartbeatInterval = null;
+let reconnectTimeout = null;
+let isExplicitLeave = false;
 
 // ✅ DOM ELEMENTS (Declared & Initialized Together)
 const editorContainer = document.getElementById('editor-container');
@@ -78,24 +81,184 @@ window.joinCollabRoom = () => {
     connectToRoom(roomId);
 };
 
-const connectToRoom = (roomId) => {
-    if (collabSocket) {
-        collabSocket.close();
+const connectToRoom = (roomId, isReconnect = false) => {
+    // Clear any pending reconnect attempts
+    if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout);
+        reconnectTimeout = null;
     }
-    
+
+    if (collabSocket) {
+        isExplicitLeave = true;
+        collabSocket.close();
+        isExplicitLeave = false;
+    }
+
     currentRoom = roomId;
+
+    // Update URL query parameters
+    const url = new URL(window.location);
+    if (url.searchParams.get('room') !== roomId) {
+        url.searchParams.set('room', roomId);
+        window.history.pushState({}, '', url.pathname + url.search);
+    }
+
+    // Update UI elements
+    const collabStatusEl = document.getElementById('collab-status');
+    const collabRoomIdEl = document.getElementById('collab-room-id');
+    const collabDialog = document.getElementById('collab-dialog');
+
+    if (collabRoomIdEl) collabRoomIdEl.innerText = roomId;
+    if (collabStatusEl) {
+        collabStatusEl.style.display = 'inline-block';
+        if (isReconnect) {
+            collabStatusEl.classList.remove('bg-success');
+            collabStatusEl.classList.add('bg-warning');
+        } else {
+            collabStatusEl.classList.remove('bg-warning');
+            collabStatusEl.classList.add('bg-success');
+        }
+    }
+    if (collabDialog && collabDialog.open) {
+        collabDialog.close();
+    }
+
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     collabSocket = new WebSocket(`${protocol}//${window.location.host}/ws/editor/${roomId}/`);
 
     collabSocket.onopen = () => {
-        showToast('success', `Joined collaboration room: ${roomId}`);
-        document.getElementById('collab-dialog').close();
-        document.getElementById('collab-status').style.display = 'inline-block';
-        document.getElementById('collab-room-id').innerText = roomId;
+        isExplicitLeave = false;
+        if (isReconnect) {
+            showToast('success', `Reconnected to collaboration room: ${roomId}`);
+        } else {
+            showToast('success', `Joined collaboration room: ${roomId}`);
+        }
+
+        if (collabStatusEl) {
+            collabStatusEl.classList.remove('bg-warning');
+            collabStatusEl.classList.add('bg-success');
+        }
+
+        // Start heartbeat ping
+        if (heartbeatInterval) clearInterval(heartbeatInterval);
+        heartbeatInterval = setInterval(() => {
+            if (collabSocket && collabSocket.readyState === WebSocket.OPEN) {
+                collabSocket.send(JSON.stringify({ type: 'ping' }));
+            }
+        }, 5000);
+
+        // Request project files and active code from other peers in the room
+        if (collabSocket && collabSocket.readyState === WebSocket.OPEN) {
+            collabSocket.send(JSON.stringify({
+                'type': 'request_sync',
+                'sender': window.clientId
+            }));
+        }
     };
 
     collabSocket.onmessage = (e) => {
         const data = JSON.parse(e.data);
+        if (data.type === 'pong') {
+            // Heartbeat acknowledged
+            return;
+        }
+
+        if (data.type === 'request_sync' && data.sender !== window.clientId) {
+            // Host/Peer: Send the project files list
+            if (collabSocket && collabSocket.readyState === WebSocket.OPEN) {
+                collabSocket.send(JSON.stringify({
+                    'type': 'project_files_sync',
+                    'files': userFiles,
+                    'sender': window.clientId
+                }));
+                // Also send the active code content
+                collabSocket.send(JSON.stringify({
+                    'type': 'code_sync',
+                    'filename': currentFile,
+                    'content': editor.getValue(),
+                    'sender': window.clientId
+                }));
+            }
+            return;
+        }
+
+        if (data.type === 'project_files_sync' && data.sender !== window.clientId) {
+            // Synchronize the files list
+            userFiles = data.files;
+            renderFileList();
+            return;
+        }
+
+        if (data.type === 'file_created' && data.sender !== window.clientId) {
+            if (!userFiles.includes(data.filename)) {
+                userFiles.push(data.filename);
+                renderFileList();
+                showToast('info', `New file created by collaborator: ${data.filename}`);
+                // Locally register the file record
+                saveFileContent(data.filename, '# Start your new Python code here!\n');
+            }
+            return;
+        }
+
+        if (data.type === 'file_deleted' && data.sender !== window.clientId) {
+            userFiles = userFiles.filter(f => f !== data.filename);
+            if (currentFile === data.filename) {
+                currentFile = userFiles.includes('main.py') ? 'main.py' : (userFiles[0] || 'main.py');
+                loadFileContent(currentFile);
+            }
+            renderFileList();
+            showToast('info', `File deleted by collaborator: ${data.filename}`);
+            
+            // Silently delete locally from DB if logged in
+            if (!window.isGuest) {
+                fetch('/api/delete_file/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ filename: data.filename })
+                });
+            }
+            return;
+        }
+
+        if (data.type === 'request_file_content' && data.sender !== window.clientId) {
+            if (data.filename === currentFile) {
+                // Send the active editor content
+                if (collabSocket && collabSocket.readyState === WebSocket.OPEN) {
+                    collabSocket.send(JSON.stringify({
+                        'type': 'file_content_response',
+                        'filename': data.filename,
+                        'content': editor.getValue(),
+                        'sender': window.clientId
+                    }));
+                }
+            } else {
+                // Fetch from database/disk and send it
+                fetch(`/api/load_code/?filename=${data.filename}`)
+                    .then(res => res.json())
+                    .then(result => {
+                        if (result.content !== null && collabSocket && collabSocket.readyState === WebSocket.OPEN) {
+                            collabSocket.send(JSON.stringify({
+                                'type': 'file_content_response',
+                                'filename': data.filename,
+                                'content': result.content,
+                                'sender': window.clientId
+                            }));
+                        }
+                    });
+            }
+            return;
+        }
+
+        if (data.type === 'file_content_response' && data.sender !== window.clientId) {
+            if (data.filename === currentFile) {
+                isRemoteChange = true;
+                editor.setValue(data.content);
+                isRemoteChange = false;
+                setStatusText('Ready', 'success');
+            }
+            return;
+        }
+
         if (data.type === 'code_sync' && data.sender !== window.clientId && data.filename === currentFile) {
             // Apply remote changes
             isRemoteChange = true;
@@ -113,16 +276,56 @@ const connectToRoom = (roomId) => {
     };
 
     collabSocket.onclose = () => {
-        showToast('error', 'Disconnected from collaboration room');
-        document.getElementById('collab-status').style.display = 'none';
-        collabSocket = null;
-        currentRoom = null;
+        // Clear heartbeat interval
+        if (heartbeatInterval) {
+            clearInterval(heartbeatInterval);
+            heartbeatInterval = null;
+        }
+
+        if (isExplicitLeave) {
+            showToast('info', 'Left collaboration room');
+            if (collabStatusEl) collabStatusEl.style.display = 'none';
+            collabSocket = null;
+            currentRoom = null;
+
+            // Remove room parameter from URL
+            const url = new URL(window.location);
+            url.searchParams.delete('room');
+            window.history.pushState({}, '', url.pathname + url.search);
+        } else {
+            showToast('error', 'Disconnected from collaboration room. Reconnecting...');
+            if (collabStatusEl) {
+                collabStatusEl.classList.remove('bg-success');
+                collabStatusEl.classList.add('bg-warning');
+            }
+
+            // Retry connection after 3 seconds
+            reconnectTimeout = setTimeout(() => {
+                if (currentRoom) {
+                    console.log("Attempting to reconnect...");
+                    connectToRoom(currentRoom, true);
+                }
+            }, 3000);
+        }
+    };
+
+    collabSocket.onerror = (err) => {
+        console.error("Collaboration socket error:", err);
     };
 };
 
 window.leaveCollabRoom = () => {
     if (collabSocket) {
+        isExplicitLeave = true;
         collabSocket.close();
+    } else {
+        // Just in case room state was set but socket was null
+        currentRoom = null;
+        const collabStatusEl = document.getElementById('collab-status');
+        if (collabStatusEl) collabStatusEl.style.display = 'none';
+        const url = new URL(window.location);
+        url.searchParams.delete('room');
+        window.history.pushState({}, '', url.pathname + url.search);
         showToast('info', 'Left collaboration room');
     }
 };
@@ -270,38 +473,65 @@ const deleteFile = async (filename) => {
         return;
     }
 
-    try {
-        const response = await fetch('/api/delete_file/', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ filename })
-        });
+    let success = false;
+    if (window.isGuest && collabSocket && collabSocket.readyState === WebSocket.OPEN) {
+        success = true;
+    } else {
+        try {
+            const response = await fetch('/api/delete_file/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ filename })
+            });
 
-        const result = await response.json();
-
-        if (result.status === 'success') {
-            // Remove from userFiles array
-            userFiles = userFiles.filter(f => f !== filename);
-
-            // If deleted file was active, switch to main.py or first available file
-            if (currentFile === filename) {
-                currentFile = userFiles.includes('main.py') ? 'main.py' : (userFiles[0] || 'main.py');
-                await loadFileContent(currentFile);
+            const result = await response.json();
+            if (result.status === 'success') {
+                success = true;
+            } else {
+                showToast('error', `Error deleting file: ${result.message}`);
             }
-
-            // Re-render file list
-            renderFileList();
-            showToast('success', `File "${filename}" deleted.`);
-        } else {
-            showToast('error', `Error deleting file: ${result.message}`);
+        } catch (error) {
+            showToast('error', 'Network error while deleting!');
         }
-    } catch (error) {
-        showToast('error', 'Network error while deleting!');
+    }
+
+    if (success) {
+        // Remove from userFiles array
+        userFiles = userFiles.filter(f => f !== filename);
+
+        // If deleted file was active, switch to main.py or first available file
+        if (currentFile === filename) {
+            currentFile = userFiles.includes('main.py') ? 'main.py' : (userFiles[0] || 'main.py');
+            await loadFileContent(currentFile);
+        }
+
+        // Re-render file list
+        renderFileList();
+        showToast('success', `File "${filename}" deleted.`);
+
+        // Broadcast file deletion to the room
+        if (collabSocket && collabSocket.readyState === WebSocket.OPEN) {
+            collabSocket.send(JSON.stringify({
+                'type': 'file_deleted',
+                'filename': filename,
+                'sender': window.clientId
+            }));
+        }
     }
 };
 
 const loadFileContent = async (filename) => {
     setStatusText(`Loading ${filename}...`);
+
+    // If collaborating, request file content from room peers
+    if (collabSocket && collabSocket.readyState === WebSocket.OPEN) {
+        collabSocket.send(JSON.stringify({
+            'type': 'request_file_content',
+            'filename': filename,
+            'sender': window.clientId
+        }));
+        return;
+    }
 
     if (window.isGuest) {
         // Guest Load Logic: Always default (Ephemeral)
@@ -434,7 +664,7 @@ def input(text=""):
 const createNewFile = async () => {
     let filename = newFilenameInput.value.trim();
 
-    if (window.isGuest) {
+    if (window.isGuest && !(collabSocket && collabSocket.readyState === WebSocket.OPEN)) {
         showToast('warning', 'Login required to create files');
         newFileDialog.close(); // Close dialog for cleanliness
         return;
@@ -450,7 +680,13 @@ const createNewFile = async () => {
         return;
     }
 
-    const success = await saveFileContent(filename, '# Start your new Python code here!\n');
+    let success = false;
+    if (window.isGuest && collabSocket && collabSocket.readyState === WebSocket.OPEN) {
+        success = true;
+    } else {
+        success = await saveFileContent(filename, '# Start your new Python code here!\n');
+    }
+
     if (success) {
         userFiles.push(filename);
         currentFile = filename;
@@ -459,6 +695,15 @@ const createNewFile = async () => {
         newFileForm.reset();
         newFileDialog.close();
         showToast('success', `File "${filename}" created successfully.`);
+
+        // Broadcast file creation to the room
+        if (collabSocket && collabSocket.readyState === WebSocket.OPEN) {
+            collabSocket.send(JSON.stringify({
+                'type': 'file_created',
+                'filename': filename,
+                'sender': window.clientId
+            }));
+        }
     }
 };
 
@@ -862,6 +1107,14 @@ const initializeApp = () => {
 
         // Keyboard Shortcut: Ctrl+Alt+N to Run Code
         editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyMod.Alt | monaco.KeyCode.KeyN, runCode);
+
+        // Auto-join room if room query parameter is present in the URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlRoom = urlParams.get('room');
+        if (urlRoom) {
+            console.log("Auto-joining collaboration room from URL parameter:", urlRoom);
+            connectToRoom(urlRoom.toUpperCase());
+        }
     });
 };
 
